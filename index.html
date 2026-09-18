@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Elevadores Fuzzy — versão web didática</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header>
+  <h1>🛗 Elevadores Casa Roja — Simulador com Lógica Fuzzy</h1>
+  <p class="subtitulo">
+    Versão web didática do
+    <a href="https://github.com/Henriqueanjos12/elevadores-fuzzy" target="_blank" rel="noopener">projeto Python original</a>
+    — controlador fuzzy Mamdani (distância × lotação → prioridade) decidindo qual elevador atende cada chamada.
+  </p>
+</header>
+
+<section id="controles" class="painel">
+  <div class="grupo">
+    <button id="btn-iniciar">▶ Iniciar</button>
+    <button id="btn-pausar">⏸ Pausar</button>
+    <button id="btn-passo">⏭ Passo</button>
+    <button id="btn-reiniciar">↺ Reiniciar</button>
+  </div>
+  <div class="grupo">
+    <label>Semente: <input id="input-semente" type="text" placeholder="aleatória" size="6" /></label>
+    <label>Algoritmo:
+      <select id="select-algoritmo">
+        <option value="fuzzy" selected>Fuzzy</option>
+        <option value="mais_proximo">Mais próximo</option>
+      </select>
+    </label>
+  </div>
+  <div class="grupo">
+    <label>Velocidade: <input id="input-velocidade" type="range" min="1" max="10" value="5" /></label>
+  </div>
+  <div class="grupo">
+    <button id="btn-chamada-aleatoria">🎲 Chamada aleatória</button>
+    <label><input id="check-automatico" type="checkbox" /> Geração automática</label>
+    <label>Intervalo: <input id="input-intervalo" type="range" min="2" max="20" value="5" /></label>
+  </div>
+</section>
+
+<main>
+  <section id="painel-predio" class="painel">
+    <h2>Prédio (12 pavimentos, 3 elevadores)</h2>
+    <div class="predio-conteudo">
+      <div id="botoes-pavimentos"></div>
+      <div class="poco-wrapper">
+        <div id="indicadores-topo"></div>
+        <canvas id="canvas-predio"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <section id="painel-fuzzy" class="painel">
+    <h2>Decisão fuzzy</h2>
+    <p id="texto-chamada-atual" class="destaque">Nenhuma chamada avaliada ainda.</p>
+
+    <div class="tabela-wrapper">
+      <table id="tabela-decisao">
+        <thead>
+          <tr><th>Elev.</th><th>Pavimento</th><th>Dir.</th><th>Dist.</th><th>Lotação</th><th>Carga</th><th>Prioridade</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="regras-ativadas" class="regras"></p>
+
+    <div class="controles-edicao">
+      <button id="btn-editar-pertinencias">🖊 Editar pertinências</button>
+      <button id="btn-restaurar-padrao">↺ Restaurar padrão</button>
+      <span class="dica">Com a edição ligada: arraste os vértices dos trapézios abaixo.</span>
+    </div>
+
+    <div id="graficos">
+      <div class="grafico-item"><span>distância (0–11 pavimentos)</span><canvas id="grafico-distancia"></canvas></div>
+      <div class="grafico-item"><span>lotação (0–100 %)</span><canvas id="grafico-lotacao"></canvas></div>
+      <div class="grafico-item"><span>prioridade — saída (0–100)</span><canvas id="grafico-prioridade"></canvas></div>
+    </div>
+  </section>
+</main>
+
+<section id="eventos" class="painel">
+  <div class="cabecalho-eventos">
+    <h2>Eventos</h2>
+    <button id="btn-limpar-eventos">Limpar</button>
+  </div>
+  <div id="lista-eventos"></div>
+</section>
+
+<div id="modal-embarque" class="modal oculto">
+  <div class="modal-conteudo">
+    <h3 id="modal-titulo">Elevador chegou — quem vai embarcar?</h3>
+    <p class="dica">Toque nos andares onde vai parar (pode marcar mais de um) e use Embarcar/Desembarcar pra dizer quantas pessoas — vermelho = vai parar lá.</p>
+    <div id="modal-grade-andares"></div>
+    <p id="modal-contagem" class="destaque"></p>
+    <div class="grupo">
+      <button id="modal-btn-embarcar">➕ Embarcar</button>
+      <button id="modal-btn-desembarcar">➖ Desembarcar</button>
+      <button id="modal-btn-limpar">↺ Limpar tudo</button>
+    </div>
+    <p id="modal-aviso" class="aviso"></p>
+    <button id="modal-btn-confirmar" class="botao-primario">Confirmar embarque</button>
+  </div>
+</div>
+
+<footer>
+  <p>Uso didático — Lógica Fuzzy. <a href="https://github.com/Henriqueanjos12/elevadores-fuzzy" target="_blank" rel="noopener">Código Python original</a> ·
+     <a href="https://github.com/Henriqueanjos12/elevadores-fuzzy-web" target="_blank" rel="noopener">código desta versão web</a></p>
+</footer>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
