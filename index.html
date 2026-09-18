@@ -40,11 +40,17 @@
     <label><input id="check-automatico" type="checkbox" /> Geração automática</label>
     <label>Intervalo: <input id="input-intervalo" type="range" min="2" max="20" value="5" /></label>
   </div>
+  <div class="grupo grupo-config-predio">
+    <label>Andares: <input id="input-andares" type="number" min="2" max="60" value="12" size="3" /></label>
+    <label>Capacidade máx. (pessoas): <input id="input-capacidade" type="number" min="1" max="99" value="12" size="3" /></label>
+    <button id="btn-configurar-predio">🏗 Configurar prédio</button>
+    <span id="status-config-predio" class="dica"></span>
+  </div>
 </section>
 
 <main>
   <section id="painel-predio" class="painel">
-    <h2>Prédio (12 pavimentos, 3 elevadores)</h2>
+    <h2 id="titulo-predio">Prédio (12 pavimentos, 3 elevadores)</h2>
     <div class="predio-conteudo">
       <div id="botoes-pavimentos"></div>
       <div class="poco-wrapper">
@@ -75,7 +81,7 @@
     </div>
 
     <div id="graficos">
-      <div class="grafico-item"><span>distância (0–11 pavimentos)</span><canvas id="grafico-distancia"></canvas></div>
+      <div class="grafico-item"><span id="legenda-grafico-distancia">distância (0–11 pavimentos)</span><canvas id="grafico-distancia"></canvas></div>
       <div class="grafico-item"><span>lotação (0–100 %)</span><canvas id="grafico-lotacao"></canvas></div>
       <div class="grafico-item"><span>prioridade — saída (0–100)</span><canvas id="grafico-prioridade"></canvas></div>
     </div>

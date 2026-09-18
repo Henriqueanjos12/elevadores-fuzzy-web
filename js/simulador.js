@@ -5,6 +5,8 @@
 
 import { criarControladorFuzzy } from "./fuzzy.js";
 import {
+  CAPACIDADE_MAX_PASSAGEIROS as CAPACIDADE_MAX_PASSAGEIROS_PADRAO,
+  PAVIMENTO_ULTIMO_ANDAR,
   atribuirChamada,
   atualizarStatusChamada,
   avancarEstadoElevador,
@@ -29,14 +31,17 @@ import {
 } from "./gerador.js";
 
 export const QUANTIDADE_ELEVADORES = 3;
-const CAPACIDADE_MAX_PASSAGEIROS = 12;
 
-export function criarSimulacao(seed = null, algoritmo = "fuzzy") {
+export function criarSimulacao(seed = null, algoritmo = "fuzzy", config = {}) {
+  const andarMaximo = config.andarMaximo ?? PAVIMENTO_ULTIMO_ANDAR;
+  const capacidadePassageiros = config.capacidadePassageiros ?? CAPACIDADE_MAX_PASSAGEIROS_PADRAO;
   return {
-    controladorFuzzy: criarControladorFuzzy(),
+    controladorFuzzy: criarControladorFuzzy(config.parametros ?? null, andarMaximo),
     algoritmo,
+    andarMaximo,
+    capacidadePassageiros,
     gerador: criarEstadoGerador(seed),
-    elevadores: Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1)),
+    elevadores: Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1, 0, capacidadePassageiros)),
     chamadas: new Map(),
     eventos: [],
     cicloAtual: 0,
@@ -49,10 +54,21 @@ export function criarSimulacao(seed = null, algoritmo = "fuzzy") {
   };
 }
 
-export function reiniciarSimulacao(sim, seed = null) {
+/** `novoConfig` (opcional) = { andarMaximo, capacidadePassageiros, parametros }
+ * -- reconfigura o prédio (Seção "Configurar prédio" da UI) além de
+ * reiniciar o estado normal. Omitido, só reinicia (equivalente ao botão
+ * "↺ Reiniciar", sem mexer na estrutura do prédio). */
+export function reiniciarSimulacao(sim, seed = null, novoConfig = null) {
   const semente = seed ?? sim.gerador.seed;
   reiniciarGerador(sim.gerador, semente);
-  sim.elevadores = Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1));
+
+  if (novoConfig) {
+    sim.andarMaximo = novoConfig.andarMaximo ?? sim.andarMaximo;
+    sim.capacidadePassageiros = novoConfig.capacidadePassageiros ?? sim.capacidadePassageiros;
+    sim.controladorFuzzy = criarControladorFuzzy(novoConfig.parametros ?? null, sim.andarMaximo);
+  }
+
+  sim.elevadores = Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1, 0, sim.capacidadePassageiros));
   sim.chamadas = new Map();
   sim.eventos = [];
   sim.cicloAtual = 0;
@@ -94,7 +110,7 @@ export function solicitarChamadaExternaSimples(sim, pavimento, direcao) {
 
   let chamada;
   try {
-    chamada = criarChamadaSimples(pavimento, direcao, sim.cicloAtual);
+    chamada = criarChamadaSimples(pavimento, direcao, sim.cicloAtual, sim.andarMaximo);
   } catch (erro) {
     sim.chamadasRecusadas += 1;
     registrarEvento(sim, "CHAMADA_RECUSADA", erro.message);
@@ -127,14 +143,14 @@ export function confirmarPassageirosChamada(sim, chamada, destinos, andaresExtra
   chamada.passageirosConfirmados = true;
   if (destinos.length === 0) return [chamada];
 
-  const erro = erroValidacaoChamada(chamada.pavimento, chamada.direcao, destinos);
+  const erro = erroValidacaoChamada(chamada.pavimento, chamada.direcao, destinos, sim.andarMaximo);
   if (erro) {
     sim.chamadasRecusadas += 1;
     registrarEvento(sim, "CHAMADA_RECUSADA", erro);
     return [chamada];
   }
 
-  const lotes = dividirEmLotes(destinos, CAPACIDADE_MAX_PASSAGEIROS);
+  const lotes = dividirEmLotes(destinos, sim.capacidadePassageiros);
   const [primeiroLote, ...lotesExtras] = lotes;
 
   const novos = gerarNovosPassageiros(chamada.pavimento, chamada.direcao, sim.cicloAtual, primeiroLote);
@@ -148,7 +164,7 @@ export function confirmarPassageirosChamada(sim, chamada, destinos, andaresExtra
 
   const chamadas = [chamada];
   for (const lote of lotesExtras) {
-    const novaChamada = criarChamadaValidada(chamada.pavimento, chamada.direcao, lote, sim.cicloAtual);
+    const novaChamada = criarChamadaValidada(chamada.pavimento, chamada.direcao, lote, sim.cicloAtual, sim.andarMaximo);
     sim.chamadas.set(novaChamada.id, novaChamada);
     registrarEvento(sim, "CHAMADA_CRIADA", `Chamada #${novaChamada.id}: excedente (${lote.length} passageiro(s)).`);
     chamadas.push(novaChamada);
@@ -192,7 +208,7 @@ export function desativarGeracaoAutomatica(sim) {
 function gerarChamadaAutomaticaSeNecessario(sim) {
   if (sim.cicloAtual - sim.ultimoCicloGeracaoAutomatica < sim.intervaloAutomatico) return;
   sim.ultimoCicloGeracaoAutomatica = sim.cicloAtual;
-  const chamada = gerarChamadaAleatoria(sim.gerador, sim.cicloAtual);
+  const chamada = gerarChamadaAleatoria(sim.gerador, sim.cicloAtual, sim.andarMaximo);
   sim.chamadas.set(chamada.id, chamada);
   registrarEvento(sim, "CHAMADA_AUTOMATICA", `Chamada #${chamada.id}: pavimento ${chamada.pavimento} ${simboloDirecao(chamada.direcao)} (${chamada.passageiros.length} passageiro(s)).`);
 }

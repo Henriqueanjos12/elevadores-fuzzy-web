@@ -1,7 +1,7 @@
 // Painel do prédio: lista de pavimentos com botões de chamada + poços dos
 // elevadores animados num <canvas>. Porta de interface/painel_edificio.py.
 
-import { chamadaEstaAtiva, direcoesValidas, PAVIMENTO_ULTIMO_ANDAR } from "./models.js";
+import { chamadaEstaAtiva, direcoesValidas } from "./models.js";
 import { simboloDirecao } from "./simulador.js";
 
 const ALTURA_LINHA = 34;
@@ -22,9 +22,9 @@ function abreviacao(codigo) {
   return codigo === 0 ? "T" : String(codigo);
 }
 
-export function construirPainelEdificio(containerBotoes, containerCanvas, elevadores, onChamada) {
+export function construirPainelEdificio(containerBotoes, containerCanvas, elevadores, onChamada, andarMaximo) {
   containerBotoes.innerHTML = "";
-  const codigos = Array.from({ length: PAVIMENTO_ULTIMO_ANDAR + 1 }, (_, i) => PAVIMENTO_ULTIMO_ANDAR - i);
+  const codigos = Array.from({ length: andarMaximo + 1 }, (_, i) => andarMaximo - i);
 
   const botoes = new Map(); // "pavimento:direcao" -> elemento
   for (const codigo of codigos) {
@@ -43,7 +43,7 @@ export function construirPainelEdificio(containerBotoes, containerCanvas, elevad
     linha.appendChild(nome);
 
     for (const direcao of ["SUBINDO", "DESCENDO"]) {
-      if (!direcoesValidas(codigo).includes(direcao)) {
+      if (!direcoesValidas(codigo, andarMaximo).includes(direcao)) {
         const espaco = document.createElement("span");
         espaco.className = "botao-chamada botao-vazio";
         linha.appendChild(espaco);

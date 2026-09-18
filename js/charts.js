@@ -52,6 +52,13 @@ export function definirParametrosGrafico(grafico, pontosPorTermo) {
   redesenhar(grafico);
 }
 
+/** Muda a escala do eixo x (usado só por "distancia", quando o número de
+ * andares do prédio é reconfigurado -- ver "Configurar prédio" em main.js). */
+export function definirUniversoMaximo(grafico, novoMaximo) {
+  grafico.universoMax = novoMaximo;
+  redesenhar(grafico);
+}
+
 export function definirModoEdicao(grafico, ativo) {
   grafico.modoEdicao = ativo;
   grafico.canvas.classList.toggle("editavel", ativo);

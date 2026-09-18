@@ -1,6 +1,10 @@
 // Modelos de domínio (elevador, chamada, passageiro), como objetos simples
 // + funções soltas -- porta direta de models/*.py do projeto Python original.
 
+// Valores padrão -- usados quando nada mais específico é passado (ex.:
+// preenchimento inicial dos formulários de configuração na UI). O prédio de
+// verdade e a calculadora de aptidão podem sobrescrever tudo isso em tempo
+// de execução (ver "Configurar prédio" em main.js).
 export const CAPACIDADE_MAX_PASSAGEIROS = 12;
 export const PESO_MEDIO_KG = 70;
 export const CAPACIDADE_MAX_KG = CAPACIDADE_MAX_PASSAGEIROS * PESO_MEDIO_KG;
@@ -9,7 +13,10 @@ export const PAVIMENTO_ULTIMO_ANDAR = 11;
 
 // ---- elevador ---------------------------------------------------------
 
-export function criarElevador(id, pavimentoAtual = 0) {
+/** A capacidade fica gravada no PRÓPRIO elevador (não numa constante global)
+ * pra permitir reconfigurar o prédio (andares/capacidade) em tempo de
+ * execução sem estado mutável compartilhado. */
+export function criarElevador(id, pavimentoAtual = 0, capacidadeMaxPassageiros = CAPACIDADE_MAX_PASSAGEIROS) {
   return {
     id,
     pavimentoAtual,
@@ -19,6 +26,8 @@ export function criarElevador(id, pavimentoAtual = 0) {
     filaParadas: new Set(),
     paradasExtras: new Set(),
     chamadasAtribuidas: new Set(),
+    capacidadeMaxPassageiros,
+    capacidadeMaxKg: capacidadeMaxPassageiros * PESO_MEDIO_KG,
   };
 }
 
@@ -27,12 +36,12 @@ export function calcularCargaKg(elevador) {
 }
 
 export function calcularLotacaoPercentual(elevador) {
-  return (calcularCargaKg(elevador) / CAPACIDADE_MAX_KG) * 100;
+  return (calcularCargaKg(elevador) / elevador.capacidadeMaxKg) * 100;
 }
 
 export function calcularVagasDisponiveis(elevador) {
-  const porQuantidade = CAPACIDADE_MAX_PASSAGEIROS - elevador.passageiros.length;
-  const pesoLivre = CAPACIDADE_MAX_KG - calcularCargaKg(elevador);
+  const porQuantidade = elevador.capacidadeMaxPassageiros - elevador.passageiros.length;
+  const pesoLivre = elevador.capacidadeMaxKg - calcularCargaKg(elevador);
   const porPeso = Math.floor(pesoLivre / PESO_MEDIO_KG);
   return Math.max(0, Math.min(porQuantidade, porPeso));
 }
@@ -238,8 +247,8 @@ export function atualizarStatusChamada(chamada) {
   return false;
 }
 
-export function direcoesValidas(pavimento) {
+export function direcoesValidas(pavimento, andarMaximo = PAVIMENTO_ULTIMO_ANDAR) {
   if (pavimento === PAVIMENTO_TERREO) return ["SUBINDO"];
-  if (pavimento === PAVIMENTO_ULTIMO_ANDAR) return ["DESCENDO"];
+  if (pavimento === andarMaximo) return ["DESCENDO"];
   return ["SUBINDO", "DESCENDO"];
 }

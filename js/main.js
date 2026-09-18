@@ -2,14 +2,7 @@
 // via setTimeout/requestAnimationFrame -- porta de interface/janela_principal.py.
 
 import { PARAMETROS_PADRAO, calcularPrioridade, clonarParametros, criarControladorFuzzy } from "./fuzzy.js";
-import {
-  CAPACIDADE_MAX_PASSAGEIROS,
-  PAVIMENTO_ULTIMO_ANDAR,
-  PESO_MEDIO_KG,
-  calcularLotacaoPercentual,
-  calcularVagasDisponiveis,
-  criarElevador,
-} from "./models.js";
+import { PESO_MEDIO_KG, calcularLotacaoPercentual, calcularVagasDisponiveis, criarElevador } from "./models.js";
 import {
   ativarGeracaoAutomatica,
   avancarUmCiclo,
@@ -25,7 +18,7 @@ import {
 } from "./simulador.js";
 import { gerarChamadaAleatoria } from "./gerador.js";
 import { animarEdificio, atualizarEstadoEdificio, construirPainelEdificio } from "./building.js";
-import { construirGrafico, definirMarcadores, definirModoEdicao, definirParametrosGrafico } from "./charts.js";
+import { construirGrafico, definirMarcadores, definirModoEdicao, definirParametrosGrafico, definirUniversoMaximo } from "./charts.js";
 
 const INTERVALO_ANIMACAO_MS = 40;
 const intervaloPorVelocidade = (v) => 2200 - (v - 1) * 220;
@@ -49,10 +42,20 @@ for (const elevador of sim.elevadores) {
   indicadoresTopo.set(elevador.id, span);
 }
 
-const painelPredio = construirPainelEdificio(containerBotoes, canvasPredio, sim.elevadores, (pavimento, direcao) => {
+function aoClicarChamada(pavimento, direcao) {
   solicitarChamadaExternaSimples(sim, pavimento, direcao);
   atualizarPosCiclo();
-});
+}
+
+let painelPredio = construirPainelEdificio(containerBotoes, canvasPredio, sim.elevadores, aoClicarChamada, sim.andarMaximo);
+
+const tituloPredio = document.getElementById("titulo-predio");
+const legendaGraficoDistancia = document.getElementById("legenda-grafico-distancia");
+function atualizarTituloPredio() {
+  tituloPredio.textContent = `Prédio (${sim.andarMaximo + 1} pavimentos, ${sim.elevadores.length} elevadores, capacidade ${sim.capacidadePassageiros} pessoa(s)/elevador)`;
+  legendaGraficoDistancia.textContent = `distância (0–${sim.andarMaximo} pavimentos)`;
+}
+atualizarTituloPredio();
 
 function loopAnimacao() {
   animarEdificio(painelPredio, sim);
@@ -197,7 +200,7 @@ document.getElementById("input-velocidade").addEventListener("input", (ev) => {
   intervaloCicloMs = intervaloPorVelocidade(Number(ev.target.value));
 });
 document.getElementById("btn-chamada-aleatoria").addEventListener("click", () => {
-  const chamada = gerarChamadaAleatoria(sim.gerador, sim.cicloAtual);
+  const chamada = gerarChamadaAleatoria(sim.gerador, sim.cicloAtual, sim.andarMaximo);
   sim.chamadas.set(chamada.id, chamada);
   atualizarPosCiclo();
 });
@@ -208,6 +211,74 @@ document.getElementById("check-automatico").addEventListener("change", (ev) => {
 document.getElementById("input-intervalo").addEventListener("input", (ev) => {
   sim.intervaloAutomatico = Math.max(1, Number(ev.target.value));
 });
+
+// ---- configurar prédio (andares / capacidade) ---------------------------
+
+document.getElementById("btn-configurar-predio").addEventListener("click", reconfigurarPredio);
+
+function reconfigurarPredio() {
+  const status = document.getElementById("status-config-predio");
+  const andares = parseInt(document.getElementById("input-andares").value, 10);
+  const capacidade = parseInt(document.getElementById("input-capacidade").value, 10);
+
+  if (!Number.isInteger(andares) || !Number.isInteger(capacidade)) {
+    status.textContent = "Use números inteiros.";
+    status.style.color = "var(--vermelho)";
+    return;
+  }
+  if (andares < 2) {
+    status.textContent = "Mínimo 2 andares (térreo + 1).";
+    status.style.color = "var(--vermelho)";
+    return;
+  }
+  if (capacidade < 1) {
+    status.textContent = "Capacidade mínima é 1 pessoa.";
+    status.style.color = "var(--vermelho)";
+    return;
+  }
+
+  sim.pausado = true;
+  if (idAfterCiclo !== null) {
+    clearTimeout(idAfterCiclo);
+    idAfterCiclo = null;
+  }
+
+  // Preserva edições feitas em "lotacao"/"prioridade" (não dependem do
+  // número de andares), mas reseta "distancia" ao padrão -- os pontos
+  // dela foram desenhados/editados numa escala (0 a andarMaximo ANTIGO)
+  // que não faz mais sentido depois de mudar a quantidade de andares.
+  const parametrosPreservados = clonarParametros(sim.controladorFuzzy.parametros);
+  parametrosPreservados.distancia = clonarParametros(PARAMETROS_PADRAO).distancia;
+
+  const novoAndarMaximo = andares - 1;
+  reiniciarSimulacao(sim, sim.gerador.seed, {
+    andarMaximo: novoAndarMaximo,
+    capacidadePassageiros: capacidade,
+    parametros: parametrosPreservados,
+  });
+
+  painelPredio = construirPainelEdificio(containerBotoes, canvasPredio, sim.elevadores, aoClicarChamada, sim.andarMaximo);
+  atualizarTituloPredio();
+
+  definirUniversoMaximo(graficos.distancia, sim.andarMaximo);
+  definirControladorNosGraficos(sim.controladorFuzzy);
+  reconstruirCalculadoraTeste();
+
+  listaEventos.innerHTML = "";
+  ultimaQuantidadeEventos = 0;
+  corpoTabela.innerHTML = "";
+  textoChamadaAtual.textContent = "Nenhuma chamada avaliada ainda.";
+  regrasAtivadasEl.textContent = "";
+  corpoResultadoTeste.innerHTML = "";
+  definirMarcadores(graficos.distancia, []);
+  definirMarcadores(graficos.lotacao, []);
+  definirMarcadores(graficos.prioridade, []);
+
+  status.textContent = `Aplicado: ${andares} andares (0 a ${novoAndarMaximo}), capacidade ${capacidade} pessoa(s)/elevador.`;
+  status.style.color = "var(--texto-fraco)";
+
+  atualizarPosCiclo();
+}
 
 // ---- modal "painel interno" (embarque em duas fases) ---------------------
 
@@ -235,7 +306,7 @@ function abrirModalEmbarque(elevador, chamada, aoConfirmar) {
   modalTitulo.textContent = `Elevador ${elevador.id} chegou — quem vai embarcar? (pavimento ${chamada.pavimento} ${simboloDirecao(chamada.direcao)})`;
   const vagas = calcularVagasDisponiveis(elevador);
   const opcoes = [];
-  for (let codigo = 0; codigo <= PAVIMENTO_ULTIMO_ANDAR; codigo += 1) {
+  for (let codigo = 0; codigo <= sim.andarMaximo; codigo += 1) {
     if (chamada.direcao === "SUBINDO" ? codigo > chamada.pavimento : codigo < chamada.pavimento) opcoes.push(codigo);
   }
 
@@ -306,75 +377,97 @@ function nomeAndarTeste(codigo) {
   return codigo === 0 ? "Térreo" : `${codigo}º andar`;
 }
 
-const selectAndarChamadaTeste = document.getElementById("select-andar-chamada-teste");
-for (let codigo = 0; codigo <= PAVIMENTO_ULTIMO_ANDAR; codigo += 1) {
-  const opt = document.createElement("option");
-  opt.value = String(codigo);
-  opt.textContent = nomeAndarTeste(codigo);
-  selectAndarChamadaTeste.appendChild(opt);
-}
-selectAndarChamadaTeste.value = String(PAVIMENTO_ULTIMO_ANDAR);
-
-const corpoConfigTeste = document.getElementById("corpo-config-teste");
-const linhasConfigTeste = [];
-for (let id = 1; id <= 3; id += 1) {
-  const tr = document.createElement("tr");
-
-  const tdNome = document.createElement("td");
-  tdNome.textContent = `E${id}`;
-  tdNome.style.color = CORES_ELEVADOR_TESTE[id];
-  tdNome.style.fontWeight = "bold";
-  tr.appendChild(tdNome);
-
-  const tdPosicao = document.createElement("td");
-  const selPosicao = document.createElement("select");
-  for (let codigo = 0; codigo <= PAVIMENTO_ULTIMO_ANDAR; codigo += 1) {
+function preencherSelectAndares(select, andarMaximo, valorPreferido) {
+  const anterior = valorPreferido ?? (Number(select.value) || 0);
+  select.innerHTML = "";
+  for (let codigo = 0; codigo <= andarMaximo; codigo += 1) {
     const opt = document.createElement("option");
     opt.value = String(codigo);
     opt.textContent = nomeAndarTeste(codigo);
-    selPosicao.appendChild(opt);
+    select.appendChild(opt);
   }
-  selPosicao.value = "0";
-  tdPosicao.appendChild(selPosicao);
-  tr.appendChild(tdPosicao);
+  select.value = String(Math.min(anterior, andarMaximo));
+}
 
-  const tdCarga = document.createElement("td");
-  const selCarga = document.createElement("select");
-  for (let v = 0; v <= CAPACIDADE_MAX_PASSAGEIROS; v += 1) {
+function preencherSelectCarga(select, capacidadeMaxima) {
+  const anterior = Number(select.value) || 0;
+  select.innerHTML = "";
+  for (let v = 0; v <= capacidadeMaxima; v += 1) {
     const opt = document.createElement("option");
     opt.value = String(v);
     opt.textContent = String(v);
-    selCarga.appendChild(opt);
+    select.appendChild(opt);
   }
-  tdCarga.appendChild(selCarga);
-  tr.appendChild(tdCarga);
-
-  const tdCondicao = document.createElement("td");
-  const selCondicao = document.createElement("select");
-  for (const condicao of CONDICOES_TESTE) {
-    const opt = document.createElement("option");
-    opt.value = condicao;
-    opt.textContent = condicao;
-    selCondicao.appendChild(opt);
-  }
-  tdCondicao.appendChild(selCondicao);
-  tr.appendChild(tdCondicao);
-
-  const tdServico = document.createElement("td");
-  const checkServico = document.createElement("input");
-  checkServico.type = "checkbox";
-  checkServico.checked = true;
-  tdServico.appendChild(checkServico);
-  tr.appendChild(tdServico);
-
-  corpoConfigTeste.appendChild(tr);
-  linhasConfigTeste.push({ id, selPosicao, selCarga, selCondicao, checkServico });
+  select.value = String(Math.min(anterior, capacidadeMaxima));
 }
+
+const selectAndarChamadaTeste = document.getElementById("select-andar-chamada-teste");
+const corpoConfigTeste = document.getElementById("corpo-config-teste");
+const linhasConfigTeste = [];
+
+function criarLinhasConfigTeste() {
+  corpoConfigTeste.innerHTML = "";
+  linhasConfigTeste.length = 0;
+  for (let id = 1; id <= 3; id += 1) {
+    const tr = document.createElement("tr");
+
+    const tdNome = document.createElement("td");
+    tdNome.textContent = `E${id}`;
+    tdNome.style.color = CORES_ELEVADOR_TESTE[id];
+    tdNome.style.fontWeight = "bold";
+    tr.appendChild(tdNome);
+
+    const tdPosicao = document.createElement("td");
+    const selPosicao = document.createElement("select");
+    tdPosicao.appendChild(selPosicao);
+    tr.appendChild(tdPosicao);
+
+    const tdCarga = document.createElement("td");
+    const selCarga = document.createElement("select");
+    tdCarga.appendChild(selCarga);
+    tr.appendChild(tdCarga);
+
+    const tdCondicao = document.createElement("td");
+    const selCondicao = document.createElement("select");
+    for (const condicao of CONDICOES_TESTE) {
+      const opt = document.createElement("option");
+      opt.value = condicao;
+      opt.textContent = condicao;
+      selCondicao.appendChild(opt);
+    }
+    tdCondicao.appendChild(selCondicao);
+    tr.appendChild(tdCondicao);
+
+    const tdServico = document.createElement("td");
+    const checkServico = document.createElement("input");
+    checkServico.type = "checkbox";
+    checkServico.checked = true;
+    tdServico.appendChild(checkServico);
+    tr.appendChild(tdServico);
+
+    corpoConfigTeste.appendChild(tr);
+    linhasConfigTeste.push({ id, selPosicao, selCarga, selCondicao, checkServico });
+  }
+}
+
+/** (Re)popula as opções de andar/carga da calculadora com o `andarMaximo` e
+ * `capacidadePassageiros` ATUAIS do prédio -- chamada na inicialização e
+ * de novo sempre que "🏗 Configurar prédio" muda essa configuração. */
+function reconstruirCalculadoraTeste() {
+  preencherSelectAndares(selectAndarChamadaTeste, sim.andarMaximo, sim.andarMaximo);
+  for (const linha of linhasConfigTeste) {
+    preencherSelectAndares(linha.selPosicao, sim.andarMaximo);
+    preencherSelectCarga(linha.selCarga, sim.capacidadePassageiros);
+  }
+}
+
+criarLinhasConfigTeste();
+reconstruirCalculadoraTeste();
 
 const DIRECAO_POR_CONDICAO_TESTE = { Parado: "PARADO", Subindo: "SUBINDO", Descendo: "DESCENDO" };
 
 function montarElevadorTeste(id, pavimento, pessoas, condicao, emServico) {
-  const elevador = criarElevador(id, pavimento);
+  const elevador = criarElevador(id, pavimento, sim.capacidadePassageiros);
   for (let i = 0; i < pessoas; i += 1) {
     elevador.passageiros.push({ pesoKg: PESO_MEDIO_KG });
   }
