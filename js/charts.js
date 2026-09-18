@@ -133,7 +133,7 @@ function redesenhar(grafico) {
   for (const marcador of grafico.marcadores) {
     const px = xParaPixel(grafico, marcador.valor);
     ctx.strokeStyle = marcador.cor ?? "crimson";
-    ctx.setLineDash([4, 3]);
+    ctx.setLineDash(marcador.tracado ?? [4, 3]);
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(px, 0);

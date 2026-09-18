@@ -96,6 +96,7 @@ tr.descartado td { color: var(--texto-fraco); }
 .regras { font-size: 0.75rem; color: var(--texto-fraco); min-height: 1.2em; }
 
 .controles-edicao { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0; }
+.dica { font-size: 0.75rem; color: var(--texto-fraco); margin: 4px 0; }
 .controles-edicao .dica { font-size: 0.72rem; color: var(--texto-fraco); }
 button.editando { background: #b45309; border-color: #b45309; }
 

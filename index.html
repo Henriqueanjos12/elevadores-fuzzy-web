@@ -82,6 +82,34 @@
   </section>
 </main>
 
+<section id="painel-teste" class="painel">
+  <h2>Calculadora de aptidão</h2>
+  <p class="dica">Não afeta a simulação em andamento — configure cada elevador à mão e veja o resultado abaixo e marcado nos gráficos acima.</p>
+
+  <div class="tabela-wrapper">
+    <table id="tabela-config-teste">
+      <thead>
+        <tr><th>Elevador</th><th>Posição</th><th>Carga (pessoas)</th><th>Condição</th><th>Em serviço</th></tr>
+      </thead>
+      <tbody id="corpo-config-teste"></tbody>
+    </table>
+  </div>
+
+  <div class="grupo" style="margin-top: 10px;">
+    <label>Andar da chamada: <select id="select-andar-chamada-teste"></select></label>
+    <button id="btn-calcular-aptidao">🧮 Calcular aptidão</button>
+  </div>
+
+  <div class="tabela-wrapper" style="margin-top: 10px;">
+    <table id="tabela-resultado-teste">
+      <thead>
+        <tr><th>Elev.</th><th>Em serviço</th><th>Dist.</th><th>Lotação</th><th>Aptidão</th><th>Situação</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</section>
+
 <section id="eventos" class="painel">
   <div class="cabecalho-eventos">
     <h2>Eventos</h2>

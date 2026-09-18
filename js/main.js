@@ -1,8 +1,15 @@
 // Orquestração da página: monta os painéis e comanda o laço de simulação
 // via setTimeout/requestAnimationFrame -- porta de interface/janela_principal.py.
 
-import { PARAMETROS_PADRAO, clonarParametros, criarControladorFuzzy } from "./fuzzy.js";
-import { calcularVagasDisponiveis, PAVIMENTO_ULTIMO_ANDAR } from "./models.js";
+import { PARAMETROS_PADRAO, calcularPrioridade, clonarParametros, criarControladorFuzzy } from "./fuzzy.js";
+import {
+  CAPACIDADE_MAX_PASSAGEIROS,
+  PAVIMENTO_ULTIMO_ANDAR,
+  PESO_MEDIO_KG,
+  calcularLotacaoPercentual,
+  calcularVagasDisponiveis,
+  criarElevador,
+} from "./models.js";
 import {
   ativarGeracaoAutomatica,
   avancarUmCiclo,
@@ -289,6 +296,139 @@ function abrirModalEmbarque(elevador, chamada, aoConfirmar) {
 
   modal.classList.remove("oculto");
 }
+
+// ---- calculadora de aptidão (aba "Teste" do app original) -------------------
+
+const CORES_ELEVADOR_TESTE = { 1: "#3b82f6", 2: "#22c55e", 3: "#f59e0b" };
+const CONDICOES_TESTE = ["Parado", "Subindo", "Descendo"];
+
+function nomeAndarTeste(codigo) {
+  return codigo === 0 ? "Térreo" : `${codigo}º andar`;
+}
+
+const selectAndarChamadaTeste = document.getElementById("select-andar-chamada-teste");
+for (let codigo = 0; codigo <= PAVIMENTO_ULTIMO_ANDAR; codigo += 1) {
+  const opt = document.createElement("option");
+  opt.value = String(codigo);
+  opt.textContent = nomeAndarTeste(codigo);
+  selectAndarChamadaTeste.appendChild(opt);
+}
+selectAndarChamadaTeste.value = String(PAVIMENTO_ULTIMO_ANDAR);
+
+const corpoConfigTeste = document.getElementById("corpo-config-teste");
+const linhasConfigTeste = [];
+for (let id = 1; id <= 3; id += 1) {
+  const tr = document.createElement("tr");
+
+  const tdNome = document.createElement("td");
+  tdNome.textContent = `E${id}`;
+  tdNome.style.color = CORES_ELEVADOR_TESTE[id];
+  tdNome.style.fontWeight = "bold";
+  tr.appendChild(tdNome);
+
+  const tdPosicao = document.createElement("td");
+  const selPosicao = document.createElement("select");
+  for (let codigo = 0; codigo <= PAVIMENTO_ULTIMO_ANDAR; codigo += 1) {
+    const opt = document.createElement("option");
+    opt.value = String(codigo);
+    opt.textContent = nomeAndarTeste(codigo);
+    selPosicao.appendChild(opt);
+  }
+  selPosicao.value = "0";
+  tdPosicao.appendChild(selPosicao);
+  tr.appendChild(tdPosicao);
+
+  const tdCarga = document.createElement("td");
+  const selCarga = document.createElement("select");
+  for (let v = 0; v <= CAPACIDADE_MAX_PASSAGEIROS; v += 1) {
+    const opt = document.createElement("option");
+    opt.value = String(v);
+    opt.textContent = String(v);
+    selCarga.appendChild(opt);
+  }
+  tdCarga.appendChild(selCarga);
+  tr.appendChild(tdCarga);
+
+  const tdCondicao = document.createElement("td");
+  const selCondicao = document.createElement("select");
+  for (const condicao of CONDICOES_TESTE) {
+    const opt = document.createElement("option");
+    opt.value = condicao;
+    opt.textContent = condicao;
+    selCondicao.appendChild(opt);
+  }
+  tdCondicao.appendChild(selCondicao);
+  tr.appendChild(tdCondicao);
+
+  const tdServico = document.createElement("td");
+  const checkServico = document.createElement("input");
+  checkServico.type = "checkbox";
+  checkServico.checked = true;
+  tdServico.appendChild(checkServico);
+  tr.appendChild(tdServico);
+
+  corpoConfigTeste.appendChild(tr);
+  linhasConfigTeste.push({ id, selPosicao, selCarga, selCondicao, checkServico });
+}
+
+const DIRECAO_POR_CONDICAO_TESTE = { Parado: "PARADO", Subindo: "SUBINDO", Descendo: "DESCENDO" };
+
+function montarElevadorTeste(id, pavimento, pessoas, condicao, emServico) {
+  const elevador = criarElevador(id, pavimento);
+  for (let i = 0; i < pessoas; i += 1) {
+    elevador.passageiros.push({ pesoKg: PESO_MEDIO_KG });
+  }
+  if (emServico) {
+    elevador.direcao = DIRECAO_POR_CONDICAO_TESTE[condicao];
+    elevador.estado = DIRECAO_POR_CONDICAO_TESTE[condicao];
+  } else {
+    elevador.direcao = "PARADO";
+    elevador.estado = "FORA_DE_SERVICO";
+  }
+  return elevador;
+}
+
+const corpoResultadoTeste = document.querySelector("#tabela-resultado-teste tbody");
+
+document.getElementById("btn-calcular-aptidao").addEventListener("click", () => {
+  const pavimentoChamada = Number(selectAndarChamadaTeste.value);
+
+  const resultados = linhasConfigTeste.map(({ id, selPosicao, selCarga, selCondicao, checkServico }) => {
+    const elevador = montarElevadorTeste(id, Number(selPosicao.value), Number(selCarga.value), selCondicao.value, checkServico.checked);
+    const resultado = calcularPrioridade(sim.controladorFuzzy, elevador, pavimentoChamada, calcularLotacaoPercentual, calcularVagasDisponiveis);
+    return { id, emServico: checkServico.checked, ...resultado };
+  });
+
+  corpoResultadoTeste.innerHTML = "";
+  const marcadoresDistancia = [];
+  const marcadoresLotacao = [];
+  const marcadoresPrioridade = [];
+
+  for (const r of resultados) {
+    let situacao = "OK";
+    if (r.foraDeServico) situacao = "Fora de serviço";
+    else if (r.descartado) situacao = "Descartado (filtro)";
+
+    const tr = document.createElement("tr");
+    if (r.descartado || r.foraDeServico) tr.className = "descartado";
+    tr.innerHTML =
+      `<td>E${r.id}</td><td>${r.emServico ? "Sim" : "Não"}</td><td>${r.entrada.distancia.toFixed(0)}</td>` +
+      `<td>${r.entrada.lotacao.toFixed(0)}%</td><td>${r.prioridade.toFixed(1)}</td><td>${situacao}</td>`;
+    corpoResultadoTeste.appendChild(tr);
+
+    if (!r.foraDeServico) {
+      const tracado = r.descartado ? [2, 2] : [4, 3];
+      const cor = CORES_ELEVADOR_TESTE[r.id];
+      marcadoresDistancia.push({ valor: r.entrada.distancia, cor, tracado });
+      marcadoresLotacao.push({ valor: r.entrada.lotacao, cor, tracado });
+      marcadoresPrioridade.push({ valor: r.prioridade, cor, tracado });
+    }
+  }
+
+  definirMarcadores(graficos.distancia, marcadoresDistancia);
+  definirMarcadores(graficos.lotacao, marcadoresLotacao);
+  definirMarcadores(graficos.prioridade, marcadoresPrioridade);
+});
 
 // ---- estado inicial ---------------------------------------------------------
 
