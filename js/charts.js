@@ -96,20 +96,16 @@ export function definirMarcadores(grafico, marcadores) {
 
 // ---- coordenadas ---------------------------------------------------------
 
-const MARGEM_ESQUERDA_X = 20; // espaço pros números "0"/"1" do eixo y, à esquerda das curvas
-
 function xParaPixel(grafico, x) {
   const min = -grafico.universoMax * MARGEM;
   const max = grafico.universoMax * (1 + MARGEM);
-  const areaUtil = grafico.largura - MARGEM_ESQUERDA_X;
-  return MARGEM_ESQUERDA_X + ((x - min) / (max - min)) * areaUtil;
+  return ((x - min) / (max - min)) * grafico.largura;
 }
 
 function pixelParaX(grafico, px) {
   const min = -grafico.universoMax * MARGEM;
   const max = grafico.universoMax * (1 + MARGEM);
-  const areaUtil = grafico.largura - MARGEM_ESQUERDA_X;
-  return min + ((px - MARGEM_ESQUERDA_X) / areaUtil) * (max - min);
+  return min + (px / grafico.largura) * (max - min);
 }
 
 const MARGEM_SUPERIOR_Y = 10;
@@ -143,30 +139,21 @@ function redesenhar(grafico) {
   ctx.clearRect(0, 0, largura, altura);
 
   const yBase = yParaPixel(grafico, 0);
-  const yTopo = yParaPixel(grafico, 1);
 
-  // linha de base (grau de pertinência 0), como antes -- sem linha vertical
-  // de eixo. As duas pontas (0 e 1, sempre grau de pertinência) ficam na
-  // margem reservada à esquerda, ANTES de onde as curvas começam, pra nunca
-  // ficar cortadas nem por baixo delas.
   ctx.strokeStyle = "#334155";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(MARGEM_ESQUERDA_X, yBase);
+  ctx.moveTo(0, yBase);
   ctx.lineTo(largura, yBase);
   ctx.stroke();
-
-  ctx.fillStyle = "#7d8590";
-  ctx.font = "9px system-ui, sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillText("1", MARGEM_ESQUERDA_X - 5, yTopo + 3);
-  ctx.fillText("0", MARGEM_ESQUERDA_X - 5, yBase + 3);
 
   // eixo x: marcações + valores (a unidade -- pavimentos, %, pontos -- já
   // está no título acima do gráfico, então aqui só o número, exceto em
   // "lotacao" onde o "%" ajuda a não confundir com as outras duas escalas).
   const sufixo = grafico.nome === "lotacao" ? "%" : "";
   ctx.strokeStyle = "#475569";
+  ctx.fillStyle = "#7d8590";
+  ctx.font = "9px system-ui, sans-serif";
   ctx.textAlign = "center";
   for (const valor of gerarTicks(grafico.universoMax)) {
     const px = xParaPixel(grafico, valor);

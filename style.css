@@ -139,6 +139,3 @@ button.editando { background: #b45309; border-color: #b45309; }
 #modal-grade-andares button { padding: 8px 4px; }
 #modal-grade-andares button.marcado { background: var(--vermelho); border-color: var(--vermelho); }
 .aviso { color: var(--vermelho); font-size: 0.8rem; min-height: 1.2em; }
-
-footer { text-align: center; color: var(--texto-fraco); font-size: 0.75rem; padding: 16px 0; }
-footer a { color: var(--acento); }
