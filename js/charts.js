@@ -3,11 +3,15 @@
 
 import { trapmf } from "./fuzzy.js";
 
-const CORES_TERMO = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#a855f7"];
+// Paleta categórica validada (CVD-safe) da skill de dataviz -- passos de
+// modo escuro dos slots 1-5 (azul, laranja, água-marinha, amarelo, magenta),
+// na mesma ordem em que foram validados (a ordem É o mecanismo de segurança
+// pra daltonismo, não é só estética -- não reordenar).
+const CORES_TERMO = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"];
 const LIMIAR_PIXELS = 12;
 const MARGEM = 0.08;
 
-export function construirGrafico(canvas, nome, universoMax) {
+export function construirGrafico(canvas, nome, universoMax, legendaEl = null) {
   const dpr = window.devicePixelRatio || 1;
   const cssLargura = canvas.clientWidth || 260;
   const cssAltura = canvas.clientHeight || 150;
@@ -28,6 +32,7 @@ export function construirGrafico(canvas, nome, universoMax) {
     arraste: null,
     marcadores: [],
     onEdicaoConfirmada: null,
+    legendaEl,
   };
 
   canvas.addEventListener("mousedown", (ev) => aoPressionar(grafico, ev));
@@ -49,7 +54,27 @@ function toMouseEvent(canvas, touchEvent) {
 export function definirParametrosGrafico(grafico, pontosPorTermo) {
   grafico.pontos = {};
   for (const [termo, pontos] of Object.entries(pontosPorTermo)) grafico.pontos[termo] = [...pontos];
+  atualizarLegenda(grafico);
   redesenhar(grafico);
+}
+
+/** Legenda HTML (fora do canvas) -- os nomes dos termos eram desenhados em
+ * cima das curvas, mas colidiam entre si em gráficos estreitos/com muitos
+ * termos (ex.: "prioridade", com 5). Uma legenda de verdade identifica cada
+ * curva pela cor sem depender de caber texto dentro do gráfico. */
+function atualizarLegenda(grafico) {
+  if (!grafico.legendaEl) return;
+  grafico.legendaEl.innerHTML = "";
+  Object.keys(grafico.pontos).forEach((termo, indice) => {
+    const item = document.createElement("span");
+    item.className = "legenda-item";
+    const marcador = document.createElement("span");
+    marcador.className = "legenda-cor";
+    marcador.style.backgroundColor = CORES_TERMO[indice % CORES_TERMO.length];
+    item.appendChild(marcador);
+    item.appendChild(document.createTextNode(termo.replace("_", " ")));
+    grafico.legendaEl.appendChild(item);
+  });
 }
 
 /** Muda a escala do eixo x (usado só por "distancia", quando o número de
@@ -126,15 +151,6 @@ function redesenhar(grafico) {
       ctx.arc(px, py, 3, 0, Math.PI * 2);
       ctx.fill();
     });
-
-    const b = pontos[1];
-    const c = pontos[2];
-    const rotulo = termo.replace("_", " ");
-    ctx.font = "10px system-ui, sans-serif";
-    ctx.textAlign = "center";
-    const meiaLargura = ctx.measureText(rotulo).width / 2;
-    const px = Math.max(meiaLargura + 2, Math.min(xParaPixel(grafico, (b + c) / 2), largura - meiaLargura - 2));
-    ctx.fillText(rotulo, px, yParaPixel(grafico, 0.5) - 6);
   });
 
   for (const marcador of grafico.marcadores) {

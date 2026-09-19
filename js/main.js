@@ -50,10 +50,10 @@ function aoClicarChamada(pavimento, direcao) {
 let painelPredio = construirPainelEdificio(containerBotoes, canvasPredio, sim.elevadores, aoClicarChamada, sim.andarMaximo);
 
 const tituloPredio = document.getElementById("titulo-predio");
-const legendaGraficoDistancia = document.getElementById("legenda-grafico-distancia");
+const tituloGraficoDistancia = document.getElementById("titulo-grafico-distancia");
 function atualizarTituloPredio() {
   tituloPredio.textContent = `Prédio (${sim.andarMaximo + 1} pavimentos, ${sim.elevadores.length} elevadores, capacidade ${sim.capacidadePassageiros} pessoa(s)/elevador)`;
-  legendaGraficoDistancia.textContent = `distância (0–${sim.andarMaximo} pavimentos)`;
+  tituloGraficoDistancia.textContent = `distância (0–${sim.andarMaximo} pavimentos)`;
 }
 atualizarTituloPredio();
 
@@ -66,9 +66,9 @@ requestAnimationFrame(loopAnimacao);
 // ---- gráficos fuzzy ---------------------------------------------------------
 
 const graficos = {
-  distancia: construirGrafico(document.getElementById("grafico-distancia"), "distancia", 11),
-  lotacao: construirGrafico(document.getElementById("grafico-lotacao"), "lotacao", 100),
-  prioridade: construirGrafico(document.getElementById("grafico-prioridade"), "prioridade", 100),
+  distancia: construirGrafico(document.getElementById("grafico-distancia"), "distancia", 11, document.getElementById("legenda-distancia")),
+  lotacao: construirGrafico(document.getElementById("grafico-lotacao"), "lotacao", 100, document.getElementById("legenda-lotacao")),
+  prioridade: construirGrafico(document.getElementById("grafico-prioridade"), "prioridade", 100, document.getElementById("legenda-prioridade")),
 };
 
 function definirControladorNosGraficos(controlador) {
