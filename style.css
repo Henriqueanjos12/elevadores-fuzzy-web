@@ -69,8 +69,13 @@ main {
 @media (max-width: 800px) {
   main { grid-template-columns: 1fr; }
 }
+/* Grid/flex items default to min-width:auto (won't shrink below their
+   content's intrinsic size) -- without this, #painel-predio's fixed-width
+   canvas + floor rows push the whole page wider than the viewport on
+   narrow screens instead of scrolling locally. */
+main > .painel { min-width: 0; }
 
-.predio-conteudo { display: flex; gap: 12px; align-items: flex-start; }
+.predio-conteudo { display: flex; gap: 12px; align-items: flex-start; overflow-x: auto; }
 #botoes-pavimentos { display: flex; flex-direction: column; }
 .linha-pavimento { display: flex; align-items: center; gap: 6px; }
 .rotulo-pavimento { width: 18px; color: var(--texto-fraco); font-family: Consolas, monospace; font-weight: bold; font-size: 0.8rem; }
