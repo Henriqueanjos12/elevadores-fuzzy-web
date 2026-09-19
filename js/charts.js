@@ -134,11 +134,26 @@ function gerarTicks(max, alvoTicks = 5) {
 
 // ---- desenho ---------------------------------------------------------
 
+/** Texto com um pequeno fundo atrás (cor do canvas) -- sem isso, os números
+ * do eixo y ficam ilegíveis sempre que uma curva passa exatamente por cima
+ * (ex.: "proxima" já nasce em pertinência 1 lá no canto, bem onde o rótulo
+ * "1" fica). Evita precisar reservar uma margem só pra eles. */
+function desenharRotuloComFundo(ctx, texto, x, y, alinhamento) {
+  const largura = ctx.measureText(texto).width;
+  const x0 = alinhamento === "left" ? x - 1 : x - largura - 1;
+  ctx.fillStyle = "#1c1c1e";
+  ctx.fillRect(x0, y - 8, largura + 2, 10);
+  ctx.fillStyle = "#7d8590";
+  ctx.textAlign = alinhamento;
+  ctx.fillText(texto, x, y);
+}
+
 function redesenhar(grafico) {
   const { ctx, largura, altura } = grafico;
   ctx.clearRect(0, 0, largura, altura);
 
   const yBase = yParaPixel(grafico, 0);
+  const yTopo = yParaPixel(grafico, 1);
 
   ctx.strokeStyle = "#334155";
   ctx.lineWidth = 1;
@@ -147,13 +162,19 @@ function redesenhar(grafico) {
   ctx.lineTo(largura, yBase);
   ctx.stroke();
 
+  ctx.font = "9px system-ui, sans-serif";
+
+  // eixo y: só as pontas (0 e 1, sempre grau de pertinência) -- com fundo,
+  // não com margem reservada, pra nunca ficar cortado nem por baixo de nada.
+  desenharRotuloComFundo(ctx, "1", 2, yTopo + 3, "left");
+  desenharRotuloComFundo(ctx, "0", 2, yBase + 3, "left");
+
   // eixo x: marcações + valores (a unidade -- pavimentos, %, pontos -- já
   // está no título acima do gráfico, então aqui só o número, exceto em
   // "lotacao" onde o "%" ajuda a não confundir com as outras duas escalas).
   const sufixo = grafico.nome === "lotacao" ? "%" : "";
   ctx.strokeStyle = "#475569";
   ctx.fillStyle = "#7d8590";
-  ctx.font = "9px system-ui, sans-serif";
   ctx.textAlign = "center";
   for (const valor of gerarTicks(grafico.universoMax)) {
     const px = xParaPixel(grafico, valor);
