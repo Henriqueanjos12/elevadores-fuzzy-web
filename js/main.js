@@ -4,19 +4,16 @@
 import { PARAMETROS_PADRAO, calcularPrioridade, clonarParametros, criarControladorFuzzy } from "./fuzzy.js";
 import { PESO_MEDIO_KG, calcularLotacaoPercentual, calcularVagasDisponiveis, criarElevador } from "./models.js";
 import {
-  ativarGeracaoAutomatica,
   avancarUmCiclo,
   chamadaAguardandoEmbarque,
   confirmarPassageirosChamada,
   criarSimulacao,
-  desativarGeracaoAutomatica,
   executarCiclo,
   limparEventos,
   reiniciarSimulacao,
   simboloDirecao,
   solicitarChamadaExternaSimples,
 } from "./simulador.js";
-import { gerarChamadaAleatoria } from "./gerador.js";
 import { animarEdificio, atualizarEstadoEdificio, construirPainelEdificio } from "./building.js";
 import { construirGrafico, definirMarcadores, definirModoEdicao, definirParametrosGrafico, definirUniversoMaximo } from "./charts.js";
 
@@ -199,19 +196,6 @@ document.getElementById("select-algoritmo").addEventListener("change", (ev) => {
 document.getElementById("input-velocidade").addEventListener("input", (ev) => {
   intervaloCicloMs = intervaloPorVelocidade(Number(ev.target.value));
 });
-document.getElementById("btn-chamada-aleatoria").addEventListener("click", () => {
-  const chamada = gerarChamadaAleatoria(sim.gerador, sim.cicloAtual, sim.andarMaximo);
-  sim.chamadas.set(chamada.id, chamada);
-  atualizarPosCiclo();
-});
-document.getElementById("check-automatico").addEventListener("change", (ev) => {
-  if (ev.target.checked) ativarGeracaoAutomatica(sim, sim.intervaloAutomatico);
-  else desativarGeracaoAutomatica(sim);
-});
-document.getElementById("input-intervalo").addEventListener("input", (ev) => {
-  sim.intervaloAutomatico = Math.max(1, Number(ev.target.value));
-});
-
 // ---- configurar prédio (andares / capacidade) ---------------------------
 
 document.getElementById("btn-configurar-predio").addEventListener("click", reconfigurarPredio);

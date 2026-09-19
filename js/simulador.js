@@ -25,7 +25,6 @@ import {
   criarChamadaValidada,
   criarEstadoGerador,
   erroValidacaoChamada,
-  gerarChamadaAleatoria,
   gerarNovosPassageiros,
   reiniciarGerador,
 } from "./gerador.js";
@@ -46,9 +45,6 @@ export function criarSimulacao(seed = null, algoritmo = "fuzzy", config = {}) {
     eventos: [],
     cicloAtual: 0,
     pausado: true,
-    automaticoAtivo: false,
-    intervaloAutomatico: 5,
-    ultimoCicloGeracaoAutomatica: 0,
     ultimaAvaliacao: [],
     chamadasRecusadas: 0,
   };
@@ -73,8 +69,6 @@ export function reiniciarSimulacao(sim, seed = null, novoConfig = null) {
   sim.eventos = [];
   sim.cicloAtual = 0;
   sim.pausado = true;
-  sim.automaticoAtivo = false;
-  sim.ultimoCicloGeracaoAutomatica = 0;
   sim.ultimaAvaliacao = [];
   sim.chamadasRecusadas = 0;
 }
@@ -180,8 +174,6 @@ export function confirmarPassageirosChamada(sim, chamada, destinos, andaresExtra
 export function executarCiclo(sim) {
   sim.cicloAtual += 1;
 
-  if (sim.automaticoAtivo) gerarChamadaAutomaticaSeNecessario(sim);
-
   despacharChamadasPendentes(sim);
 
   for (const elevador of sim.elevadores) {
@@ -194,23 +186,6 @@ export function executarCiclo(sim) {
 
 export function avancarUmCiclo(sim) {
   executarCiclo(sim);
-}
-
-export function ativarGeracaoAutomatica(sim, intervaloCiclos = 5) {
-  sim.automaticoAtivo = true;
-  sim.intervaloAutomatico = Math.max(1, intervaloCiclos);
-}
-
-export function desativarGeracaoAutomatica(sim) {
-  sim.automaticoAtivo = false;
-}
-
-function gerarChamadaAutomaticaSeNecessario(sim) {
-  if (sim.cicloAtual - sim.ultimoCicloGeracaoAutomatica < sim.intervaloAutomatico) return;
-  sim.ultimoCicloGeracaoAutomatica = sim.cicloAtual;
-  const chamada = gerarChamadaAleatoria(sim.gerador, sim.cicloAtual, sim.andarMaximo);
-  sim.chamadas.set(chamada.id, chamada);
-  registrarEvento(sim, "CHAMADA_AUTOMATICA", `Chamada #${chamada.id}: pavimento ${chamada.pavimento} ${simboloDirecao(chamada.direcao)} (${chamada.passageiros.length} passageiro(s)).`);
 }
 
 function despacharChamadasPendentes(sim) {

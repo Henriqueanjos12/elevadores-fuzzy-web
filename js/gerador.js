@@ -1,7 +1,13 @@
-// Geração de chamadas -- manual (clique nos botões) e automática (aleatória
-// com semente reprodutível). Porta de simulation/gerador_chamadas.py.
+// Geração de chamadas manuais (clique nos botões). Porta de
+// simulation/gerador_chamadas.py.
+//
+// O PRNG com semente (criarRng/criarEstadoGerador) ficou de pé mesmo depois
+// que a geração aleatória/automática foi removida da UI -- sim.gerador.seed
+// ainda é lido pelo botão "Reiniciar" (reaproveita a última semente quando o
+// campo "Semente" fica em branco), mas o número em si não muda mais nenhum
+// comportamento, já que nada mais consome estado.rng.
 
-import { PAVIMENTO_TERREO, PAVIMENTO_ULTIMO_ANDAR, criarChamada, criarPassageiro, direcoesValidas } from "./models.js";
+import { PAVIMENTO_ULTIMO_ANDAR, criarChamada, criarPassageiro, direcoesValidas } from "./models.js";
 
 /** PRNG determinístico (mulberry32) -- mesma semente sempre produz a mesma
  * sequência, igual ao random.Random(seed) do Python (embora a sequência em
@@ -25,15 +31,6 @@ export function criarEstadoGerador(seed = null) {
 export function reiniciarGerador(estado, seed = null) {
   estado.seed = seed ?? estado.seed;
   estado.rng = criarRng(estado.seed);
-}
-
-function rngInt(rng, min, max) {
-  // inteiro uniforme em [min, max], inclusive
-  return min + Math.floor(rng() * (max - min + 1));
-}
-
-function rngEscolha(rng, lista) {
-  return lista[Math.floor(rng() * lista.length)];
 }
 
 export function erroValidacaoDirecao(pavimento, direcao, andarMaximo = PAVIMENTO_ULTIMO_ANDAR) {
@@ -67,17 +64,4 @@ export function criarChamadaValidada(pavimento, direcao, destinos, cicloAtual, a
   if (erro) throw new Error(erro);
   const passageiros = gerarNovosPassageiros(pavimento, direcao, cicloAtual, destinos);
   return criarChamada(pavimento, direcao, cicloAtual, passageiros, true);
-}
-
-export function gerarChamadaAleatoria(estado, cicloAtual, andarMaximo = PAVIMENTO_ULTIMO_ANDAR, quantidadeMaxPassageiros = 4) {
-  const { rng } = estado;
-  const pavimento = rngInt(rng, PAVIMENTO_TERREO, andarMaximo);
-  const direcao = rngEscolha(rng, direcoesValidas(pavimento, andarMaximo));
-  const quantidade = rngInt(rng, 1, quantidadeMaxPassageiros);
-
-  const destinos = [];
-  for (let i = 0; i < quantidade; i += 1) {
-    destinos.push(direcao === "SUBINDO" ? rngInt(rng, pavimento + 1, andarMaximo) : rngInt(rng, 0, pavimento - 1));
-  }
-  return criarChamadaValidada(pavimento, direcao, destinos, cicloAtual, andarMaximo);
 }
