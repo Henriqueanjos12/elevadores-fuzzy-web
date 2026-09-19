@@ -487,9 +487,10 @@ document.getElementById("btn-calcular-aptidao").addEventListener("click", () => 
   const pavimentoChamada = Number(selectAndarChamadaTeste.value);
 
   const resultados = linhasConfigTeste.map(({ id, selPosicao, selCarga, selCondicao, checkServico }) => {
-    const elevador = montarElevadorTeste(id, Number(selPosicao.value), Number(selCarga.value), selCondicao.value, checkServico.checked);
+    const pavimento = Number(selPosicao.value);
+    const elevador = montarElevadorTeste(id, pavimento, Number(selCarga.value), selCondicao.value, checkServico.checked);
     const resultado = calcularPrioridade(sim.controladorFuzzy, elevador, pavimentoChamada, calcularLotacaoPercentual, calcularVagasDisponiveis);
-    return { id, emServico: checkServico.checked, ...resultado };
+    return { id, emServico: checkServico.checked, pavimento, ...resultado };
   });
 
   corpoResultadoTeste.innerHTML = "";
@@ -505,7 +506,7 @@ document.getElementById("btn-calcular-aptidao").addEventListener("click", () => 
     const tr = document.createElement("tr");
     if (r.descartado || r.foraDeServico) tr.className = "descartado";
     tr.innerHTML =
-      `<td>E${r.id}</td><td>${r.emServico ? "Sim" : "Não"}</td><td>${r.entrada.distancia.toFixed(0)}</td>` +
+      `<td>E${r.id}</td><td>${r.emServico ? "Sim" : "Não"}</td><td>${nomeAndarTeste(r.pavimento)}</td><td>${r.entrada.distancia.toFixed(0)}</td>` +
       `<td>${r.entrada.lotacao.toFixed(0)}%</td><td>${r.prioridade.toFixed(1)}</td><td>${situacao}</td>`;
     corpoResultadoTeste.appendChild(tr);
 
