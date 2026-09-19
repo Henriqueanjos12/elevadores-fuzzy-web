@@ -14,7 +14,7 @@ import {
   simboloDirecao,
   solicitarChamadaExternaSimples,
 } from "./simulador.js";
-import { LARGURA_POCO, LARGURA_ROTULO, animarEdificio, atualizarEstadoEdificio, construirPainelEdificio } from "./building.js";
+import { COR_ELEVADOR, LARGURA_POCO, LARGURA_ROTULO, animarEdificio, atualizarEstadoEdificio, construirPainelEdificio } from "./building.js";
 import { construirGrafico, definirMarcadores, definirModoEdicao, definirParametrosGrafico, definirUniversoMaximo } from "./charts.js";
 
 const INTERVALO_ANIMACAO_MS = 40;
@@ -39,7 +39,7 @@ for (const elevador of sim.elevadores) {
   const span = document.createElement("span");
   span.textContent = "-- --";
   span.style.width = `${LARGURA_POCO}px`;
-  span.style.color = { 1: "#3b82f6", 2: "#22c55e", 3: "#f59e0b" }[elevador.id];
+  span.style.color = COR_ELEVADOR[elevador.id];
   indicadoresContainer.appendChild(span);
   indicadoresTopo.set(elevador.id, span);
 }
@@ -118,7 +118,7 @@ function atualizarPainelDecisao() {
     const tr = document.createElement("tr");
     if (a.escolhido) tr.className = "escolhido";
     else if (a.descartado) tr.className = "descartado";
-    tr.innerHTML = `<td>E${a.elevadorId}</td><td>${a.pavimentoAtual}</td><td>${simboloDirecao(a.direcao)}</td>` +
+    tr.innerHTML = `<td style="color:${COR_ELEVADOR[a.elevadorId]};font-weight:bold">E${a.elevadorId}</td><td>${a.pavimentoAtual}</td><td>${simboloDirecao(a.direcao)}</td>` +
       `<td>${a.distancia.toFixed(0)}</td><td>${a.lotacao.toFixed(0)}%</td><td>${a.cargaKg.toFixed(0)} kg</td><td>${a.prioridade.toFixed(1)}</td>`;
     corpoTabela.appendChild(tr);
   }
@@ -174,14 +174,23 @@ function agendarCiclo() {
   idAfterCiclo = setTimeout(agendarCiclo, intervaloCicloMs);
 }
 
+const btnIniciar = document.getElementById("btn-iniciar");
+const btnPausar = document.getElementById("btn-pausar");
+function atualizarBotoesExecucao() {
+  btnIniciar.disabled = !sim.pausado;
+  btnPausar.disabled = sim.pausado;
+}
+
 function iniciar() {
   sim.pausado = false;
+  atualizarBotoesExecucao();
   if (idAfterCiclo === null) agendarCiclo();
 }
 
-document.getElementById("btn-iniciar").addEventListener("click", iniciar);
-document.getElementById("btn-pausar").addEventListener("click", () => {
+btnIniciar.addEventListener("click", iniciar);
+btnPausar.addEventListener("click", () => {
   sim.pausado = true;
+  atualizarBotoesExecucao();
 });
 document.getElementById("btn-passo").addEventListener("click", () => {
   avancarUmCiclo(sim);
@@ -189,10 +198,12 @@ document.getElementById("btn-passo").addEventListener("click", () => {
 });
 document.getElementById("btn-reiniciar").addEventListener("click", () => {
   reiniciarSimulacao(sim);
+  atualizarBotoesExecucao();
   listaEventos.innerHTML = "";
   ultimaQuantidadeEventos = 0;
   atualizarPosCiclo();
 });
+atualizarBotoesExecucao();
 document.getElementById("select-algoritmo").addEventListener("change", (ev) => {
   sim.algoritmo = ev.target.value;
 });
@@ -225,6 +236,7 @@ function reconfigurarPredio() {
   }
 
   sim.pausado = true;
+  atualizarBotoesExecucao();
   if (idAfterCiclo !== null) {
     clearTimeout(idAfterCiclo);
     idAfterCiclo = null;
@@ -234,6 +246,9 @@ function reconfigurarPredio() {
   // número de andares), mas reseta "distancia" ao padrão -- os pontos
   // dela foram desenhados/editados numa escala (0 a andarMaximo ANTIGO)
   // que não faz mais sentido depois de mudar a quantidade de andares.
+  const distanciaPadraoAntiga = criarControladorFuzzy(null, sim.andarMaximo).parametros.distancia;
+  const distanciaFoiEditada = JSON.stringify(sim.controladorFuzzy.parametros.distancia) !== JSON.stringify(distanciaPadraoAntiga);
+
   const parametrosPreservados = clonarParametros(sim.controladorFuzzy.parametros);
   parametrosPreservados.distancia = clonarParametros(PARAMETROS_PADRAO).distancia;
 
@@ -261,10 +276,12 @@ function reconfigurarPredio() {
   definirMarcadores(graficos.lotacao, []);
   definirMarcadores(graficos.prioridade, []);
 
-  status.textContent = `Aplicado: ${andares} andares (0 a ${novoAndarMaximo}), capacidade ${capacidade} pessoa(s)/elevador.`;
+  status.textContent = `Aplicado: ${andares} andares (0 a ${novoAndarMaximo}), capacidade ${capacidade} pessoa(s)/elevador.`
+    + (distanciaFoiEditada ? " A edição feita em distância foi descartada (a escala do gráfico mudou)." : "");
   status.style.color = "var(--texto-fraco)";
 
   atualizarPosCiclo();
+  atualizarTodasSombrasRolagem();
 }
 
 // ---- modal "painel interno" (embarque em duas fases) ---------------------
@@ -281,6 +298,7 @@ function resolverEmbarquesPendentes() {
   const { elevador, chamada } = pendencia;
   const estavaRodando = !sim.pausado;
   sim.pausado = true;
+  atualizarBotoesExecucao();
 
   abrirModalEmbarque(elevador, chamada, (destinos, andaresExtras) => {
     confirmarPassageirosChamada(sim, chamada, destinos, andaresExtras);
@@ -357,7 +375,6 @@ function abrirModalEmbarque(elevador, chamada, aoConfirmar) {
 
 // ---- calculadora de aptidão (aba "Teste" do app original) -------------------
 
-const CORES_ELEVADOR_TESTE = { 1: "#3b82f6", 2: "#22c55e", 3: "#f59e0b" };
 const CONDICOES_TESTE = ["Parado", "Subindo", "Descendo"];
 
 function nomeAndarTeste(codigo) {
@@ -400,7 +417,7 @@ function criarLinhasConfigTeste() {
 
     const tdNome = document.createElement("td");
     tdNome.textContent = `E${id}`;
-    tdNome.style.color = CORES_ELEVADOR_TESTE[id];
+    tdNome.style.color = COR_ELEVADOR[id];
     tdNome.style.fontWeight = "bold";
     tr.appendChild(tdNome);
 
@@ -493,13 +510,13 @@ document.getElementById("btn-calcular-aptidao").addEventListener("click", () => 
     const tr = document.createElement("tr");
     if (r.descartado || r.foraDeServico) tr.className = "descartado";
     tr.innerHTML =
-      `<td>E${r.id}</td><td>${r.emServico ? "Sim" : "Não"}</td><td>${nomeAndarTeste(r.pavimento)}</td><td>${r.entrada.distancia.toFixed(0)}</td>` +
+      `<td style="color:${COR_ELEVADOR[r.id]};font-weight:bold">E${r.id}</td><td>${r.emServico ? "Sim" : "Não"}</td><td>${nomeAndarTeste(r.pavimento)}</td><td>${r.entrada.distancia.toFixed(0)}</td>` +
       `<td>${r.entrada.lotacao.toFixed(0)}%</td><td>${r.prioridade.toFixed(1)}</td><td>${situacao}</td>`;
     corpoResultadoTeste.appendChild(tr);
 
     if (!r.foraDeServico) {
       const tracado = r.descartado ? [2, 2] : [4, 3];
-      const cor = CORES_ELEVADOR_TESTE[r.id];
+      const cor = COR_ELEVADOR[r.id];
       marcadoresDistancia.push({ valor: r.entrada.distancia, cor, tracado });
       marcadoresLotacao.push({ valor: r.entrada.lotacao, cor, tracado });
       marcadoresPrioridade.push({ valor: r.prioridade, cor, tracado });
@@ -510,6 +527,26 @@ document.getElementById("btn-calcular-aptidao").addEventListener("click", () => 
   definirMarcadores(graficos.lotacao, marcadoresLotacao);
   definirMarcadores(graficos.prioridade, marcadoresPrioridade);
 });
+
+// ---- sombra de rolagem horizontal (prédio + tabelas) -----------------------
+
+const elementosRolaveis = document.querySelectorAll(".rolavel-h");
+
+function atualizarSombraRolagem(el) {
+  const folga = 1;
+  el.classList.toggle("pode-rolar-esq", el.scrollLeft > folga);
+  el.classList.toggle("pode-rolar-dir", el.scrollLeft < el.scrollWidth - el.clientWidth - folga);
+}
+
+function atualizarTodasSombrasRolagem() {
+  for (const el of elementosRolaveis) atualizarSombraRolagem(el);
+}
+
+for (const el of elementosRolaveis) {
+  atualizarSombraRolagem(el);
+  el.addEventListener("scroll", () => atualizarSombraRolagem(el));
+}
+window.addEventListener("resize", atualizarTodasSombrasRolagem);
 
 // ---- estado inicial ---------------------------------------------------------
 

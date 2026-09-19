@@ -10,7 +10,7 @@ export const LARGURA_ROTULO = 22;
 const FATOR_SUAVIZACAO = 0.35;
 const FATOR_SUAVIZACAO_PORTA = 0.5;
 const FRACAO_ABERTURA = 0.8;
-const COR_ELEVADOR = { 1: "#3b82f6", 2: "#22c55e", 3: "#f59e0b" };
+export const COR_ELEVADOR = { 1: "#3b82f6", 2: "#22c55e", 3: "#f59e0b" };
 const COR_CHAMADA_ATIVA = "#dc2626";
 const ESTADOS_PORTA_ABERTA = new Set(["PORTA_ABRINDO", "PORTA_ABERTA"]);
 

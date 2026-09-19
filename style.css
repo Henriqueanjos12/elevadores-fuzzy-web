@@ -48,6 +48,8 @@ button {
   font-size: 0.85rem;
 }
 button:hover { background: #3f3f46; }
+button:disabled { opacity: 0.4; cursor: default; }
+button:disabled:hover { background: #27272a; }
 button.botao-primario { background: var(--acento); border-color: var(--acento); }
 button.botao-primario:hover { filter: brightness(1.1); }
 
@@ -73,7 +75,30 @@ main {
    narrow screens instead of scrolling locally. */
 main > .painel { min-width: 0; }
 
-.predio-conteudo { display: flex; gap: 12px; align-items: flex-start; overflow-x: auto; }
+/* Sombra nas bordas indicando conteúdo rolável. Não dá pra usar o truque de
+   background-attachment: local/scroll aqui porque os filhos (canvas do
+   prédio, células de tabela) têm fundo opaco próprio que cobriria o
+   gradiente do container -- em vez disso são pseudo-elementos por cima de
+   tudo (position:absolute + z-index), ligados/desligados via JS conforme
+   scrollLeft (classes .pode-rolar-esq/.pode-rolar-dir em main.js). */
+.rolavel-h { position: relative; overflow-x: auto; }
+.rolavel-h::before, .rolavel-h::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 18px;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.rolavel-h::before { left: 0; background: linear-gradient(to right, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0)); }
+.rolavel-h::after { right: 0; background: linear-gradient(to left, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0)); }
+.rolavel-h.pode-rolar-esq::before { opacity: 1; }
+.rolavel-h.pode-rolar-dir::after { opacity: 1; }
+
+.predio-conteudo { display: flex; gap: 12px; align-items: flex-start; }
 #botoes-pavimentos { display: flex; flex-direction: column; }
 .linha-pavimento { display: flex; align-items: center; gap: 6px; }
 .rotulo-pavimento { width: 18px; color: var(--texto-fraco); font-family: Consolas, monospace; font-weight: bold; font-size: 0.8rem; }
@@ -94,7 +119,6 @@ main > .painel { min-width: 0; }
 #canvas-predio { background: #1c1c1e; border-radius: 4px; }
 
 .destaque { font-weight: 600; margin: 0 0 8px; }
-.tabela-wrapper { overflow-x: auto; }
 table { border-collapse: collapse; width: 100%; font-size: 0.78rem; }
 th, td { border: 1px solid var(--borda); padding: 4px 6px; text-align: center; }
 th { background: #27272a; }
