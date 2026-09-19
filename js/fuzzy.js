@@ -127,21 +127,22 @@ function calcularSistemaFuzzy(distanciaValor, lotacaoValor, parametros) {
 
 /** Filtro determinístico ANTES do motor fuzzy (Seção pedida pelo professor):
  * elevadores que fisicamente não fazem sentido pra chamada nem chegam a ser
- * avaliados pela máquina fuzzy -- prioridade 0 direto. */
-export function elevadorDeveSerDescartado(elevador, pavimentoChamada, calcularVagasDisponiveis) {
-  if (calcularVagasDisponiveis(elevador) === 0) return true;
-  if (elevador.estado !== "SUBINDO" && elevador.estado !== "DESCENDO") return false;
+ * avaliados pela máquina fuzzy -- prioridade 0 direto. Retorna o motivo do
+ * descarte (pra mostrar na UI) ou null se o elevador não deve ser descartado. */
+export function motivoDescarte(elevador, pavimentoChamada, calcularVagasDisponiveis) {
+  if (calcularVagasDisponiveis(elevador) === 0) return "Lotado (sem vagas)";
+  if (elevador.estado !== "SUBINDO" && elevador.estado !== "DESCENDO") return null;
 
   const { direcao, pavimentoAtual } = elevador;
-  if (pavimentoAtual === pavimentoChamada) return true;
-  if (direcao === "SUBINDO" && pavimentoAtual > pavimentoChamada) return true;
-  if (direcao === "DESCENDO" && pavimentoAtual < pavimentoChamada) return true;
-  return false;
+  if (pavimentoAtual === pavimentoChamada) return "Em movimento, já está no andar da chamada";
+  if (direcao === "SUBINDO" && pavimentoAtual > pavimentoChamada) return "Subindo e já passou do andar da chamada";
+  if (direcao === "DESCENDO" && pavimentoAtual < pavimentoChamada) return "Descendo e já passou do andar da chamada";
+  return null;
 }
 
 export function calcularPrioridade(controlador, elevador, pavimentoChamada, calcularLotacaoPercentual, calcularVagasDisponiveis) {
   if (elevador.estado === "FORA_DE_SERVICO") {
-    return { entrada: { distancia: 0, lotacao: 0 }, prioridade: 0, foraDeServico: true, descartado: false, semRegraAtivada: false, termosAtivos: [] };
+    return { entrada: { distancia: 0, lotacao: 0 }, prioridade: 0, foraDeServico: true, descartado: false, motivoDescarte: null, semRegraAtivada: false, termosAtivos: [] };
   }
 
   const distanciaMaxima = controlador.distanciaMaxima;
@@ -149,8 +150,9 @@ export function calcularPrioridade(controlador, elevador, pavimentoChamada, calc
   const lotacao = calcularLotacaoPercentual(elevador);
   const entrada = { distancia, lotacao };
 
-  if (elevadorDeveSerDescartado(elevador, pavimentoChamada, calcularVagasDisponiveis)) {
-    return { entrada, prioridade: 0, foraDeServico: false, descartado: true, semRegraAtivada: false, termosAtivos: [] };
+  const motivo = motivoDescarte(elevador, pavimentoChamada, calcularVagasDisponiveis);
+  if (motivo !== null) {
+    return { entrada, prioridade: 0, foraDeServico: false, descartado: true, motivoDescarte: motivo, semRegraAtivada: false, termosAtivos: [] };
   }
 
   const resultado = calcularSistemaFuzzy(distancia, lotacao, controlador.parametros);
@@ -159,6 +161,7 @@ export function calcularPrioridade(controlador, elevador, pavimentoChamada, calc
     prioridade: resultado.prioridade,
     foraDeServico: false,
     descartado: false,
+    motivoDescarte: null,
     semRegraAtivada: resultado.semRegraAtivada,
     termosAtivos: resultado.termosAtivos,
   };

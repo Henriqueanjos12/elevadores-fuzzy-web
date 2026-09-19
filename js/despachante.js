@@ -19,6 +19,7 @@ export function avaliarElevador(controlador, elevador, pavimentoChamada) {
     termosAtivos: resultado.termosAtivos,
     foraDeServico: resultado.foraDeServico,
     descartado: resultado.descartado,
+    motivoDescarte: resultado.motivoDescarte,
     escolhido: false,
   };
 }

@@ -117,7 +117,10 @@ function atualizarPainelDecisao() {
   for (const a of avaliacoes) {
     const tr = document.createElement("tr");
     if (a.escolhido) tr.className = "escolhido";
-    else if (a.descartado) tr.className = "descartado";
+    else if (a.descartado) {
+      tr.className = "descartado";
+      tr.title = `Descartado: ${a.motivoDescarte}`;
+    }
     tr.innerHTML = `<td style="color:${COR_ELEVADOR[a.elevadorId]};font-weight:bold">E${a.elevadorId}</td><td>${a.pavimentoAtual}</td><td>${simboloDirecao(a.direcao)}</td>` +
       `<td>${a.distancia.toFixed(0)}</td><td>${a.lotacao.toFixed(0)}%</td><td>${a.cargaKg.toFixed(0)} kg</td><td>${a.prioridade.toFixed(1)}</td>`;
     corpoTabela.appendChild(tr);
@@ -505,7 +508,7 @@ document.getElementById("btn-calcular-aptidao").addEventListener("click", () => 
   for (const r of resultados) {
     let situacao = "OK";
     if (r.foraDeServico) situacao = "Fora de serviço";
-    else if (r.descartado) situacao = "Descartado (filtro)";
+    else if (r.descartado) situacao = `Descartado: ${r.motivoDescarte}`;
 
     const tr = document.createElement("tr");
     if (r.descartado || r.foraDeServico) tr.className = "descartado";
