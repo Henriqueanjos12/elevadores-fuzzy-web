@@ -14,7 +14,7 @@ import {
   simboloDirecao,
   solicitarChamadaExternaSimples,
 } from "./simulador.js";
-import { animarEdificio, atualizarEstadoEdificio, construirPainelEdificio } from "./building.js";
+import { LARGURA_POCO, LARGURA_ROTULO, animarEdificio, atualizarEstadoEdificio, construirPainelEdificio } from "./building.js";
 import { construirGrafico, definirMarcadores, definirModoEdicao, definirParametrosGrafico, definirUniversoMaximo } from "./charts.js";
 
 const INTERVALO_ANIMACAO_MS = 40;
@@ -30,10 +30,15 @@ const containerBotoes = document.getElementById("botoes-pavimentos");
 const canvasPredio = document.getElementById("canvas-predio");
 const indicadoresTopo = new Map();
 
+// Larguras/margem batendo exatamente com as colunas dos poços no <canvas>
+// (LARGURA_ROTULO/LARGURA_POCO de building.js) -- sem isso, os indicadores
+// não alinham com o elevador que descrevem.
 const indicadoresContainer = document.getElementById("indicadores-topo");
+indicadoresContainer.style.marginLeft = `${LARGURA_ROTULO}px`;
 for (const elevador of sim.elevadores) {
   const span = document.createElement("span");
   span.textContent = "-- --";
+  span.style.width = `${LARGURA_POCO}px`;
   span.style.color = { 1: "#3b82f6", 2: "#22c55e", 3: "#f59e0b" }[elevador.id];
   indicadoresContainer.appendChild(span);
   indicadoresTopo.set(elevador.id, span);

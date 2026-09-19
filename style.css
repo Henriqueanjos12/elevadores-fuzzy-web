@@ -83,12 +83,14 @@ main > .painel { min-width: 0; }
 .botao-chamada.ativa { background: var(--vermelho); border-color: var(--vermelho); color: #fff; }
 
 .poco-wrapper { display: flex; flex-direction: column; gap: 4px; }
-#indicadores-topo { display: flex; gap: 3px; }
+#indicadores-topo { display: flex; }
 #indicadores-topo span {
-  width: 56px; text-align: center; padding: 2px 0;
-  background: #0a0a0a; border-radius: 4px;
+  box-sizing: border-box; text-align: center; padding: 2px 0;
+  background: #0a0a0a; border-right: 2px solid var(--bg-painel);
   font-family: Consolas, monospace; font-weight: bold; font-size: 0.85rem;
 }
+#indicadores-topo span:first-child { border-radius: 4px 0 0 4px; }
+#indicadores-topo span:last-child { border-radius: 0 4px 4px 0; border-right: none; }
 #canvas-predio { background: #1c1c1e; border-radius: 4px; }
 
 .destaque { font-weight: 600; margin: 0 0 8px; }

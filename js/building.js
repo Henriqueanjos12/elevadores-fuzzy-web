@@ -5,8 +5,8 @@ import { chamadaEstaAtiva, direcoesValidas } from "./models.js";
 import { simboloDirecao } from "./simulador.js";
 
 const ALTURA_LINHA = 34;
-const LARGURA_POCO = 64;
-const LARGURA_ROTULO = 22;
+export const LARGURA_POCO = 64;
+export const LARGURA_ROTULO = 22;
 const FATOR_SUAVIZACAO = 0.35;
 const FATOR_SUAVIZACAO_PORTA = 0.5;
 const FRACAO_ABERTURA = 0.8;
