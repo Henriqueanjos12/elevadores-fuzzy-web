@@ -156,22 +156,39 @@ function redesenhar(grafico) {
 
 // ---- edição (arrastar vértices) ---------------------------------------
 
+/** Quanto de espaço o ponto `indice` do termo tem pra se mover (distância
+ * até os vizinhos imediatos, incluindo os limites do universo nas pontas). */
+function liberdadeDoVertice(grafico, termo, indice) {
+  const pontos = grafico.pontos[termo];
+  const limiteInferior = indice > 0 ? pontos[indice - 1] : 0;
+  const limiteSuperior = indice < 3 ? pontos[indice + 1] : grafico.universoMax;
+  return limiteSuperior - limiteInferior;
+}
+
 function encontrarVerticeProximo(grafico, offsetX, offsetY) {
   const ys = [0, 1, 1, 0];
-  let melhor = null;
-  let menorDistancia = Infinity;
+  const candidatos = [];
   for (const [termo, pontos] of Object.entries(grafico.pontos)) {
     pontos.forEach((x, indice) => {
       const px = xParaPixel(grafico, x);
       const py = yParaPixel(grafico, ys[indice]);
       const distancia = Math.hypot(px - offsetX, py - offsetY);
-      if (distancia < LIMIAR_PIXELS && distancia < menorDistancia) {
-        menorDistancia = distancia;
-        melhor = { termo, indice };
-      }
+      if (distancia < LIMIAR_PIXELS) candidatos.push({ termo, indice, distancia });
     });
   }
-  return melhor;
+  if (candidatos.length === 0) return null;
+
+  // Termos "de canto" nascem com 2 ou 3 pontos empilhados no mesmo x (ex.:
+  // [0,0,0,5.5] -- a, b e c todos em x=0). Quando o clique empata em
+  // distância entre pontos sobrepostos, pegar sempre o primeiro (ex.: "b")
+  // prende o arraste: o teto dele é "c", que está no MESMO lugar, então ele
+  // nunca anda. Preferir o ponto empatado com mais espaço pra se mover
+  // evita esse travamento.
+  const menorDistancia = Math.min(...candidatos.map((c) => c.distancia));
+  const empatados = candidatos.filter((c) => c.distancia <= menorDistancia + 1e-6);
+  empatados.sort((a, b) => liberdadeDoVertice(grafico, b.termo, b.indice) - liberdadeDoVertice(grafico, a.termo, a.indice));
+  const { termo, indice } = empatados[0];
+  return { termo, indice };
 }
 
 function aoPressionar(grafico, ev) {
