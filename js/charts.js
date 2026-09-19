@@ -108,9 +108,28 @@ function pixelParaX(grafico, px) {
   return min + (px / grafico.largura) * (max - min);
 }
 
+const MARGEM_SUPERIOR_Y = 10;
+const MARGEM_INFERIOR_Y = 22; // espaço pros números do eixo x, abaixo da linha de base
+
 function yParaPixel(grafico, y) {
-  const margemY = 14;
-  return grafico.altura - margemY - y * (grafico.altura - 2 * margemY);
+  return grafico.altura - MARGEM_INFERIOR_Y - y * (grafico.altura - MARGEM_SUPERIOR_Y - MARGEM_INFERIOR_Y);
+}
+
+/** Valores "redondos" pro eixo x (0, passo, 2*passo, ..., até `max`),
+ * adaptado ao tamanho do universo -- mesma lógica de qualquer biblioteca de
+ * gráficos (escolhe o menor passo de {1,2,5,10}×10^n que não passe de ~5
+ * marcações). */
+function gerarTicks(max, alvoTicks = 5) {
+  if (max <= 0) return [0];
+  const bruto = max / alvoTicks;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(bruto)));
+  const normalizado = bruto / magnitude;
+  const passo = (normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 5 ? 5 : 10) * magnitude;
+
+  const ticks = [];
+  for (let v = 0; v <= max + 1e-9; v += passo) ticks.push(Math.round(v * 100) / 100);
+  if (ticks[ticks.length - 1] < max - 1e-9) ticks.push(max);
+  return ticks;
 }
 
 // ---- desenho ---------------------------------------------------------
@@ -125,6 +144,29 @@ function redesenhar(grafico) {
   ctx.moveTo(0, yParaPixel(grafico, 0));
   ctx.lineTo(largura, yParaPixel(grafico, 0));
   ctx.stroke();
+
+  // eixo x: marcações + valores (a unidade -- pavimentos, %, pontos -- já
+  // está no título acima do gráfico, então aqui só o número, exceto em
+  // "lotacao" onde o "%" ajuda a não confundir com as outras duas escalas).
+  const sufixo = grafico.nome === "lotacao" ? "%" : "";
+  ctx.strokeStyle = "#475569";
+  ctx.fillStyle = "#7d8590";
+  ctx.font = "9px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  const yBase = yParaPixel(grafico, 0);
+  for (const valor of gerarTicks(grafico.universoMax)) {
+    const px = xParaPixel(grafico, valor);
+    ctx.beginPath();
+    ctx.moveTo(px, yBase);
+    ctx.lineTo(px, yBase + 4);
+    ctx.stroke();
+    ctx.fillText(`${valor}${sufixo}`, px, yBase + 14);
+  }
+
+  // eixo y: só as pontas (0 e 1) -- é sempre grau de pertinência, 0 a 1.
+  ctx.textAlign = "right";
+  ctx.fillText("1", 14, yParaPixel(grafico, 1) + 3);
+  ctx.fillText("0", 14, yBase + 3);
 
   const nomes = Object.keys(grafico.pontos);
   nomes.forEach((termo, indice) => {
