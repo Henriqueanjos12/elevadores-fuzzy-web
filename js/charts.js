@@ -145,14 +145,14 @@ function redesenhar(grafico) {
   const yBase = yParaPixel(grafico, 0);
   const yTopo = yParaPixel(grafico, 1);
 
-  // eixo y: linha vertical + as duas pontas (0 e 1, sempre grau de
-  // pertinência) -- fica na margem reservada à esquerda, ANTES de onde as
-  // curvas começam, pra nunca ficar por baixo delas.
+  // linha de base (grau de pertinência 0), como antes -- sem linha vertical
+  // de eixo. As duas pontas (0 e 1, sempre grau de pertinência) ficam na
+  // margem reservada à esquerda, ANTES de onde as curvas começam, pra nunca
+  // ficar cortadas nem por baixo delas.
   ctx.strokeStyle = "#334155";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(MARGEM_ESQUERDA_X, yTopo);
-  ctx.lineTo(MARGEM_ESQUERDA_X, yBase);
+  ctx.moveTo(MARGEM_ESQUERDA_X, yBase);
   ctx.lineTo(largura, yBase);
   ctx.stroke();
 
