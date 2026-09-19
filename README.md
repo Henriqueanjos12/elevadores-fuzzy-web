@@ -7,7 +7,6 @@ inclusive pelo celular — e ser usada ao vivo numa aula de Lógica Fuzzy, sem
 precisar instalar nada.
 
 **[Abrir a demo ao vivo](https://henriqueanjos12.github.io/elevadores-fuzzy-web/)**
-(depois de publicado no GitHub Pages).
 
 ## O que tem aqui
 
@@ -16,24 +15,33 @@ qual dos 3 elevadores atende cada chamada externa do prédio de 12
 pavimentos — o mesmo motor de inferência (mesmas pertinências, mesmas 9
 regras) do projeto Python original, reimplementado em JavaScript.
 
-* **Prédio animado**: 12 pavimentos, 3 elevadores, botões ▲/▼ de chamada.
+* **Prédio configurável**: número de andares e capacidade máxima por
+  elevador ajustáveis em tempo real ("🏗 Configurar prédio"), com o prédio
+  e os gráficos se adaptando na hora.
+* **Prédio animado**: botões ▲/▼ de chamada em cada andar.
 * **Fluxo em duas fases**, igual um elevador de verdade: apertar o botão
   externo só registra andar e direção; o "painel interno" (quantas pessoas
   embarcam e pra quais andares) só aparece quando o elevador chega de
   portas abertas.
 * **Gráficos de pertinência editáveis**: arraste os vértices dos trapézios
   (distância, lotação, prioridade) e veja o motor de inferência mudar de
-  comportamento em tempo real — sem precisar reiniciar a simulação.
+  comportamento em tempo real — sem precisar reiniciar a simulação. O
+  estado inicial usa os pontos médios exatos; o arraste encaixa no inteiro
+  mais próximo.
 * **Tabela de decisão fuzzy**: para a última chamada despachada, mostra
   distância/lotação/carga/prioridade dos 3 elevadores lado a lado, com o
   escolhido destacado e os descartados (pelo filtro determinístico)
-  acinzentados.
+  acinzentados — passe o mouse pra ver o motivo do descarte.
+* **Calculadora de aptidão**: configure cada elevador à mão (posição,
+  carga, condição) e veja a prioridade calculada pra uma chamada
+  hipotética, sem afetar a simulação em andamento.
 * **Log de eventos** e **dois algoritmos de despacho** (fuzzy vs. mais
   próximo) para comparar.
 
 Esta versão web prioriza o essencial para explicar lógica fuzzy em aula —
-por isso não inclui a aba de teste manual nem o painel de métricas
-detalhadas do app desktop (esses continuam só na versão Python).
+por isso não inclui geração automática/aleatória de chamadas nem o painel
+de métricas detalhadas do app desktop (esses continuam só na versão
+Python).
 
 ## Rodando localmente
 
@@ -51,17 +59,17 @@ python -m http.server 8000
 ## Estrutura
 
 ```text
-index.html          # layout da página
-style.css           # tema escuro, responsivo
+index.html           # layout da página
+style.css            # tema escuro, responsivo
 js/
-├── fuzzy.js         # controlador fuzzy: pertinências, regras, inferência (Mamdani + centroide)
-├── models.js        # elevador/chamada/passageiro (objetos simples + funções)
-├── gerador.js        # geração de chamadas manual/aleatória (com semente reprodutível)
+├── fuzzy.js          # controlador fuzzy: pertinências, regras, inferência (Mamdani + centroide)
+├── models.js         # elevador/chamada/passageiro (objetos simples + funções)
+├── gerador.js        # criação/validação de chamadas manuais (sem geração aleatória)
 ├── despachante.js    # escolhe o elevador (fuzzy ou mais próximo)
-├── simulador.js       # laço de ciclos discretos, embarque/desembarque, eventos
-├── building.js        # <canvas> do prédio: poços, portas, botões de chamada
-├── charts.js           # gráficos de pertinência com edição ao vivo (arrastar vértices)
-└── main.js            # orquestração: liga tudo, laço de simulação, modal de embarque
+├── simulador.js      # laço de ciclos discretos, embarque/desembarque, eventos
+├── building.js       # <canvas> do prédio: poços, portas, botões de chamada
+├── charts.js         # gráficos de pertinência com edição ao vivo (arrastar vértices)
+└── main.js           # orquestração: liga tudo, laço de simulação, modal de embarque
 ```
 
 A correspondência com os módulos do projeto Python é direta
