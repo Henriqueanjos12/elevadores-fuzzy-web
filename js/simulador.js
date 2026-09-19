@@ -20,18 +20,11 @@ import {
   reativarElevador,
 } from "./models.js";
 import { escolherElevador } from "./despachante.js";
-import {
-  criarChamadaSimples,
-  criarChamadaValidada,
-  criarEstadoGerador,
-  erroValidacaoChamada,
-  gerarNovosPassageiros,
-  reiniciarGerador,
-} from "./gerador.js";
+import { criarChamadaSimples, criarChamadaValidada, erroValidacaoChamada, gerarNovosPassageiros } from "./gerador.js";
 
 export const QUANTIDADE_ELEVADORES = 3;
 
-export function criarSimulacao(seed = null, algoritmo = "fuzzy", config = {}) {
+export function criarSimulacao(algoritmo = "fuzzy", config = {}) {
   const andarMaximo = config.andarMaximo ?? PAVIMENTO_ULTIMO_ANDAR;
   const capacidadePassageiros = config.capacidadePassageiros ?? CAPACIDADE_MAX_PASSAGEIROS_PADRAO;
   return {
@@ -39,7 +32,6 @@ export function criarSimulacao(seed = null, algoritmo = "fuzzy", config = {}) {
     algoritmo,
     andarMaximo,
     capacidadePassageiros,
-    gerador: criarEstadoGerador(seed),
     elevadores: Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1, 0, capacidadePassageiros)),
     chamadas: new Map(),
     eventos: [],
@@ -54,10 +46,7 @@ export function criarSimulacao(seed = null, algoritmo = "fuzzy", config = {}) {
  * -- reconfigura o prédio (Seção "Configurar prédio" da UI) além de
  * reiniciar o estado normal. Omitido, só reinicia (equivalente ao botão
  * "↺ Reiniciar", sem mexer na estrutura do prédio). */
-export function reiniciarSimulacao(sim, seed = null, novoConfig = null) {
-  const semente = seed ?? sim.gerador.seed;
-  reiniciarGerador(sim.gerador, semente);
-
+export function reiniciarSimulacao(sim, novoConfig = null) {
   if (novoConfig) {
     sim.andarMaximo = novoConfig.andarMaximo ?? sim.andarMaximo;
     sim.capacidadePassageiros = novoConfig.capacidadePassageiros ?? sim.capacidadePassageiros;

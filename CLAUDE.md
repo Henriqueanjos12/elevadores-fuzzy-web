@@ -26,7 +26,7 @@ Mirrors the Python original's module boundaries directly, so someone who knows o
 |---|---|---|
 | `fuzzy.js` | `fuzzy/controlador_fuzzy.py` | trapezoidal membership (`trapmf`), 9 rules, Mamdani min/max + centroid over a discretized 0–100 (or 0–`distanciaMaxima`) universe, deterministic pre-fuzzy discard filter |
 | `models.js` | `models/*.py` | elevador/chamada/passageiro as plain objects + loose functions, floor-direction rules, state machine |
-| `gerador.js` | `simulation/gerador_chamadas.py` | manual + seeded-random call generation (mulberry32 PRNG — reproducible, but *not* bit-identical to Python's `random.Random` with the same seed) |
+| `gerador.js` | `simulation/gerador_chamadas.py` | manual call creation + validation (floor-direction rules). The Python original also does seeded-random call generation; this port had that too (mulberry32 PRNG) until the "chamada aleatória"/"geração automática" UI controls were removed as an intentional simplification — no RNG left here now |
 | `despachante.js` | `simulation/despachante.py` | picks an elevator (fuzzy or mais-próximo, same 4-level tie-break cascade) |
 | `simulador.js` | `simulation/simulador.py` | the single `sim` state object + `executarCiclo(sim)` |
 | `building.js` | `interface/painel_edificio.py` | `<canvas>` elevator shafts + DOM floor/call-button list |

@@ -20,7 +20,7 @@ import { construirGrafico, definirMarcadores, definirModoEdicao, definirParametr
 const INTERVALO_ANIMACAO_MS = 40;
 const intervaloPorVelocidade = (v) => 2200 - (v - 1) * 220;
 
-const sim = criarSimulacao(null, "fuzzy");
+const sim = criarSimulacao("fuzzy");
 let intervaloCicloMs = intervaloPorVelocidade(5);
 let idAfterCiclo = null;
 
@@ -183,9 +183,7 @@ document.getElementById("btn-passo").addEventListener("click", () => {
   atualizarPosCiclo();
 });
 document.getElementById("btn-reiniciar").addEventListener("click", () => {
-  const texto = document.getElementById("input-semente").value.trim();
-  const semente = /^-?\d+$/.test(texto) ? parseInt(texto, 10) : null;
-  reiniciarSimulacao(sim, semente);
+  reiniciarSimulacao(sim);
   listaEventos.innerHTML = "";
   ultimaQuantidadeEventos = 0;
   atualizarPosCiclo();
@@ -235,7 +233,7 @@ function reconfigurarPredio() {
   parametrosPreservados.distancia = clonarParametros(PARAMETROS_PADRAO).distancia;
 
   const novoAndarMaximo = andares - 1;
-  reiniciarSimulacao(sim, sim.gerador.seed, {
+  reiniciarSimulacao(sim, {
     andarMaximo: novoAndarMaximo,
     capacidadePassageiros: capacidade,
     parametros: parametrosPreservados,
