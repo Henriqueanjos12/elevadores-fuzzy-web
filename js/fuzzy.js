@@ -11,16 +11,16 @@ export const DISTANCIA_MAXIMA_PADRAO = 11;
 // 100%) para as três variáveis -- garante simetria (espelhado de trás pra
 // frente) e nenhuma "ilha" (não existe ponto do universo com todos os
 // termos zerados ao mesmo tempo). Em "distancia" (universo 0-11, não
-// divisível por 4) os pontos "puros" seriam 2.75/5.5/8.25 -- arredondados
-// pro inteiro mais próximo aqui (mantendo a simetria: "media" vira um
-// trapézio com um platô de largura 1, em vez de um triângulo com pico
-// exatamente no meio) pra bater com a edição por arraste, que também é
-// discreta (só inteiros).
+// divisível por 4) os pontos "puros" são fracionários (2.75/5.5/8.25); o
+// estado inicial usa esses valores exatos para preservar a simetria
+// perfeita, mesmo não sendo um ponto que a edição por arraste produziria --
+// o arraste (em charts.js) sempre encaixa no inteiro mais próximo, mas isso
+// é só uma conveniência da edição interativa, não uma restrição do padrão.
 export const PARAMETROS_PADRAO = {
   distancia: {
-    proxima: [0, 0, 0, 5],
-    media: [3, 5, 6, 8],
-    distante: [6, 11, 11, 11],
+    proxima: [0, 0, 0, 5.5],
+    media: [2.75, 5.5, 5.5, 8.25],
+    distante: [5.5, 11, 11, 11],
   },
   lotacao: {
     baixa: [0, 0, 0, 50],
