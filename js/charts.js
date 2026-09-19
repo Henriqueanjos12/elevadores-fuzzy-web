@@ -277,10 +277,11 @@ function aoMover(grafico, ev) {
   const pontos = grafico.pontos[termo];
   let valor = pixelParaX(grafico, ev.offsetX);
   valor = Math.max(0, Math.min(grafico.universoMax, valor));
+  valor = Math.round(valor); // edição discreta -- encaixa no inteiro mais próximo, não contínuo
   const limiteInferior = indice > 0 ? pontos[indice - 1] : 0;
   const limiteSuperior = indice < 3 ? pontos[indice + 1] : grafico.universoMax;
   valor = Math.max(limiteInferior, Math.min(valor, limiteSuperior));
-  pontos[indice] = Math.round(valor * 100) / 100;
+  pontos[indice] = valor;
   redesenhar(grafico);
 }
 
