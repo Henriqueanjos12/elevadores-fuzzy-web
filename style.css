@@ -22,9 +22,7 @@ body {
 }
 
 header { padding: 4px 4px 12px; }
-header h1 { margin: 0 0 4px; font-size: 1.4rem; }
-.subtitulo { margin: 0; color: var(--texto-fraco); font-size: 0.85rem; }
-.subtitulo a { color: var(--acento); }
+header h1 { margin: 0; font-size: 1.4rem; }
 
 .painel {
   background: var(--bg-painel);
