@@ -8,12 +8,19 @@ export const DISTANCIA_MAXIMA_PADRAO = 11;
 // até c, desce a 0 em d. Um triângulo é só o caso b === c.
 //
 // Pontos igualmente espaçados (passo = universo / 4: 0%, 25%, 50%, 75%,
-// 100%) para as três variáveis -- ver a explicação completa no README.
+// 100%) para as três variáveis -- garante simetria (espelhado de trás pra
+// frente) e nenhuma "ilha" (não existe ponto do universo com todos os
+// termos zerados ao mesmo tempo). Em "distancia" (universo 0-11, não
+// divisível por 4) os pontos "puros" seriam 2.75/5.5/8.25 -- arredondados
+// pro inteiro mais próximo aqui (mantendo a simetria: "media" vira um
+// trapézio com um platô de largura 1, em vez de um triângulo com pico
+// exatamente no meio) pra bater com a edição por arraste, que também é
+// discreta (só inteiros).
 export const PARAMETROS_PADRAO = {
   distancia: {
-    proxima: [0, 0, 0, 5.5],
-    media: [2.75, 5.5, 5.5, 8.25],
-    distante: [5.5, 11, 11, 11],
+    proxima: [0, 0, 0, 5],
+    media: [3, 5, 6, 8],
+    distante: [6, 11, 11, 11],
   },
   lotacao: {
     baixa: [0, 0, 0, 50],
