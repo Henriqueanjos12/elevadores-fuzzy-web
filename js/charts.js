@@ -96,16 +96,20 @@ export function definirMarcadores(grafico, marcadores) {
 
 // ---- coordenadas ---------------------------------------------------------
 
+const MARGEM_ESQUERDA_X = 20; // espaço pros números "0"/"1" do eixo y, à esquerda das curvas
+
 function xParaPixel(grafico, x) {
   const min = -grafico.universoMax * MARGEM;
   const max = grafico.universoMax * (1 + MARGEM);
-  return ((x - min) / (max - min)) * grafico.largura;
+  const areaUtil = grafico.largura - MARGEM_ESQUERDA_X;
+  return MARGEM_ESQUERDA_X + ((x - min) / (max - min)) * areaUtil;
 }
 
 function pixelParaX(grafico, px) {
   const min = -grafico.universoMax * MARGEM;
   const max = grafico.universoMax * (1 + MARGEM);
-  return min + (px / grafico.largura) * (max - min);
+  const areaUtil = grafico.largura - MARGEM_ESQUERDA_X;
+  return min + ((px - MARGEM_ESQUERDA_X) / areaUtil) * (max - min);
 }
 
 const MARGEM_SUPERIOR_Y = 10;
@@ -138,22 +142,32 @@ function redesenhar(grafico) {
   const { ctx, largura, altura } = grafico;
   ctx.clearRect(0, 0, largura, altura);
 
+  const yBase = yParaPixel(grafico, 0);
+  const yTopo = yParaPixel(grafico, 1);
+
+  // eixo y: linha vertical + as duas pontas (0 e 1, sempre grau de
+  // pertinência) -- fica na margem reservada à esquerda, ANTES de onde as
+  // curvas começam, pra nunca ficar por baixo delas.
   ctx.strokeStyle = "#334155";
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(0, yParaPixel(grafico, 0));
-  ctx.lineTo(largura, yParaPixel(grafico, 0));
+  ctx.moveTo(MARGEM_ESQUERDA_X, yTopo);
+  ctx.lineTo(MARGEM_ESQUERDA_X, yBase);
+  ctx.lineTo(largura, yBase);
   ctx.stroke();
+
+  ctx.fillStyle = "#7d8590";
+  ctx.font = "9px system-ui, sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("1", MARGEM_ESQUERDA_X - 5, yTopo + 3);
+  ctx.fillText("0", MARGEM_ESQUERDA_X - 5, yBase + 3);
 
   // eixo x: marcações + valores (a unidade -- pavimentos, %, pontos -- já
   // está no título acima do gráfico, então aqui só o número, exceto em
   // "lotacao" onde o "%" ajuda a não confundir com as outras duas escalas).
   const sufixo = grafico.nome === "lotacao" ? "%" : "";
   ctx.strokeStyle = "#475569";
-  ctx.fillStyle = "#7d8590";
-  ctx.font = "9px system-ui, sans-serif";
   ctx.textAlign = "center";
-  const yBase = yParaPixel(grafico, 0);
   for (const valor of gerarTicks(grafico.universoMax)) {
     const px = xParaPixel(grafico, valor);
     ctx.beginPath();
@@ -162,11 +176,6 @@ function redesenhar(grafico) {
     ctx.stroke();
     ctx.fillText(`${valor}${sufixo}`, px, yBase + 14);
   }
-
-  // eixo y: só as pontas (0 e 1) -- é sempre grau de pertinência, 0 a 1.
-  ctx.textAlign = "right";
-  ctx.fillText("1", 14, yParaPixel(grafico, 1) + 3);
-  ctx.fillText("0", 14, yBase + 3);
 
   const nomes = Object.keys(grafico.pontos);
   nomes.forEach((termo, indice) => {
