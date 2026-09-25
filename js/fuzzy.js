@@ -8,23 +8,38 @@ export const DISTANCIA_MAXIMA_PADRAO = 11;
 // até c, desce a 0 em d. Um triângulo é só o caso b === c.
 //
 // Pontos igualmente espaçados (passo = universo / 4: 0%, 25%, 50%, 75%,
-// 100%) para as três variáveis -- garante simetria (espelhado de trás pra
-// frente) e nenhuma "ilha" (não existe ponto do universo com todos os
-// termos zerados ao mesmo tempo). Em "distancia" (universo 0-11, não
-// divisível por 4) os pontos "puros" são fracionários (2.75/5.5/8.25); o
-// estado inicial usa esses valores exatos para preservar a simetria
-// perfeita, mesmo não sendo um ponto que a edição por arraste produziria --
-// o arraste (em charts.js) sempre encaixa no inteiro mais próximo, mas isso
-// é só uma conveniência da edição interativa, não uma restrição do padrão.
+// 100%) -- termos extremos são rampas puras (sem platô) de largura meio
+// universo; o termo central é esticado até as DUAS pontas do universo
+// (largura = universo inteiro, o dobro dos extremos), não só entre os
+// pontos vizinhos. Essa largura assimétrica evita uma armadilha da
+// defuzzificação por centroide: quando só o termo extremo está ativo (o
+// central ainda em zero) e a regra correspondente aponta pra um termo de
+// saída SIMÉTRICO, o centroide de qualquer recorte de uma forma simétrica
+// cai sempre no mesmo ponto -- não importa a força de ativação. Isso fazia
+// elevadores a distâncias bem diferentes (ex.: 1 e 5 andares, mesma
+// lotação) saírem com prioridade IDÊNTICA sempre que a distância maior
+// ainda caísse nessa faixa "só o extremo ativo" (achado testando a
+// calculadora de aptidão com um prédio grande, onde essa faixa fica larga
+// o bastante pra ficar óbvio). Esticar o termo central resolve: ele sempre
+// contribui um pouco, então pelo menos duas regras disputam a saída em
+// quase todo o universo, e a mistura entre elas volta a responder à
+// distância exata (ver teste equivalente em test_controlador_fuzzy.py).
+//
+// Em "distancia" (universo 0-11, não divisível por 4) os pontos "puros"
+// são fracionários (5.5 no meio); o estado inicial usa esses valores
+// exatos, mesmo não sendo um ponto que a edição por arraste produziria --
+// o arraste (em charts.js) sempre encaixa no inteiro mais próximo, mas
+// isso é só uma conveniência da edição interativa, não uma restrição do
+// padrão.
 export const PARAMETROS_PADRAO = {
   distancia: {
     proxima: [0, 0, 0, 5.5],
-    media: [2.75, 5.5, 5.5, 8.25],
+    media: [0, 5.5, 5.5, 11],
     distante: [5.5, 11, 11, 11],
   },
   lotacao: {
     baixa: [0, 0, 0, 50],
-    media: [25, 50, 50, 75],
+    media: [0, 50, 50, 100],
     alta: [50, 100, 100, 100],
   },
   prioridade: {
