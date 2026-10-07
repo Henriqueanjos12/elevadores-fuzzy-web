@@ -51,6 +51,16 @@ function aoClicarChamada(pavimento, direcao) {
 
 let painelPredio = construirPainelEdificio(containerBotoes, canvasPredio, sim.elevadores, aoClicarChamada, sim.andarMaximo);
 
+// O indicador digital fica ACIMA do canvas dentro de .poco-wrapper (ver
+// index.html), então o canvas nasce deslocado pra baixo em relação à lista
+// de botões, que não tem esse cabeçalho -- sem compensar, o andar do topo
+// do poço fica mais baixo na tela que o botão do mesmo andar. Medimos a
+// altura real do indicador (depende de fonte/SO, não dá pra chutar) e
+// empurramos a lista de botões pela mesma quantidade de pixels. A altura
+// do indicador não muda com a reconfiguração do prédio (número de
+// elevadores é fixo), então essa medição só precisa rodar uma vez.
+containerBotoes.style.marginTop = `${indicadoresContainer.getBoundingClientRect().height + 4}px`; // 4px = gap do .poco-wrapper
+
 const tituloPredio = document.getElementById("titulo-predio");
 const tituloGraficoDistancia = document.getElementById("titulo-grafico-distancia");
 function atualizarTituloPredio() {
