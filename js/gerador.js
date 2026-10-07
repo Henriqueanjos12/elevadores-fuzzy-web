@@ -1,7 +1,7 @@
 // Geração de chamadas manuais (clique nos botões). Porta de
 // simulation/gerador_chamadas.py.
 
-import { PAVIMENTO_ULTIMO_ANDAR, criarChamada, criarPassageiro, direcoesValidas } from "./models.js";
+import { PAVIMENTO_TERREO, PAVIMENTO_ULTIMO_ANDAR, criarChamada, criarPassageiro, direcoesValidas } from "./models.js";
 
 export function erroValidacaoDirecao(pavimento, direcao, andarMaximo = PAVIMENTO_ULTIMO_ANDAR) {
   if (!direcoesValidas(pavimento, andarMaximo).includes(direcao)) return `Pavimento ${pavimento} não possui botão de ${direcao}.`;
@@ -14,7 +14,7 @@ export function erroValidacaoChamada(pavimento, direcao, destinos, andarMaximo =
   if (erroDirecao) return erroDirecao;
   for (const destino of destinos) {
     if (destino === pavimento) return "O pavimento de destino não pode ser igual à origem.";
-    if (destino < 0 || destino > andarMaximo) return "Pavimento de destino inexistente.";
+    if (destino < PAVIMENTO_TERREO || destino > andarMaximo) return "Pavimento de destino inexistente.";
   }
   return null;
 }

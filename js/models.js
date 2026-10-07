@@ -8,15 +8,15 @@
 export const CAPACIDADE_MAX_PASSAGEIROS = 12;
 export const PESO_MEDIO_KG = 70;
 export const CAPACIDADE_MAX_KG = CAPACIDADE_MAX_PASSAGEIROS * PESO_MEDIO_KG;
-export const PAVIMENTO_TERREO = 0;
-export const PAVIMENTO_ULTIMO_ANDAR = 11;
+export const PAVIMENTO_TERREO = 1;
+export const PAVIMENTO_ULTIMO_ANDAR = 12;
 
 // ---- elevador ---------------------------------------------------------
 
 /** A capacidade fica gravada no PRÓPRIO elevador (não numa constante global)
  * pra permitir reconfigurar o prédio (andares/capacidade) em tempo de
  * execução sem estado mutável compartilhado. */
-export function criarElevador(id, pavimentoAtual = 0, capacidadeMaxPassageiros = CAPACIDADE_MAX_PASSAGEIROS) {
+export function criarElevador(id, pavimentoAtual = PAVIMENTO_TERREO, capacidadeMaxPassageiros = CAPACIDADE_MAX_PASSAGEIROS) {
   return {
     id,
     pavimentoAtual,

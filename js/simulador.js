@@ -6,6 +6,7 @@
 import { criarControladorFuzzy } from "./fuzzy.js";
 import {
   CAPACIDADE_MAX_PASSAGEIROS as CAPACIDADE_MAX_PASSAGEIROS_PADRAO,
+  PAVIMENTO_TERREO,
   PAVIMENTO_ULTIMO_ANDAR,
   atribuirChamada,
   atualizarStatusChamada,
@@ -28,11 +29,11 @@ export function criarSimulacao(algoritmo = "fuzzy", config = {}) {
   const andarMaximo = config.andarMaximo ?? PAVIMENTO_ULTIMO_ANDAR;
   const capacidadePassageiros = config.capacidadePassageiros ?? CAPACIDADE_MAX_PASSAGEIROS_PADRAO;
   return {
-    controladorFuzzy: criarControladorFuzzy(config.parametros ?? null, andarMaximo),
+    controladorFuzzy: criarControladorFuzzy(config.parametros ?? null, andarMaximo - PAVIMENTO_TERREO),
     algoritmo,
     andarMaximo,
     capacidadePassageiros,
-    elevadores: Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1, 0, capacidadePassageiros)),
+    elevadores: Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1, PAVIMENTO_TERREO, capacidadePassageiros)),
     chamadas: new Map(),
     eventos: [],
     cicloAtual: 0,
@@ -50,10 +51,10 @@ export function reiniciarSimulacao(sim, novoConfig = null) {
   if (novoConfig) {
     sim.andarMaximo = novoConfig.andarMaximo ?? sim.andarMaximo;
     sim.capacidadePassageiros = novoConfig.capacidadePassageiros ?? sim.capacidadePassageiros;
-    sim.controladorFuzzy = criarControladorFuzzy(novoConfig.parametros ?? null, sim.andarMaximo);
+    sim.controladorFuzzy = criarControladorFuzzy(novoConfig.parametros ?? null, sim.andarMaximo - PAVIMENTO_TERREO);
   }
 
-  sim.elevadores = Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1, 0, sim.capacidadePassageiros));
+  sim.elevadores = Array.from({ length: QUANTIDADE_ELEVADORES }, (_, i) => criarElevador(i + 1, PAVIMENTO_TERREO, sim.capacidadePassageiros));
   sim.chamadas = new Map();
   sim.eventos = [];
   sim.cicloAtual = 0;

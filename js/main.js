@@ -2,7 +2,7 @@
 // via setTimeout/requestAnimationFrame -- porta de interface/janela_principal.py.
 
 import { PARAMETROS_PADRAO, calcularPrioridade, clonarParametros, criarControladorFuzzy } from "./fuzzy.js";
-import { PESO_MEDIO_KG, calcularLotacaoPercentual, calcularVagasDisponiveis, criarElevador } from "./models.js";
+import { PAVIMENTO_TERREO, PESO_MEDIO_KG, calcularLotacaoPercentual, calcularVagasDisponiveis, criarElevador } from "./models.js";
 import {
   avancarUmCiclo,
   chamadaAguardandoEmbarque,
@@ -54,8 +54,8 @@ let painelPredio = construirPainelEdificio(containerBotoes, canvasPredio, sim.el
 const tituloPredio = document.getElementById("titulo-predio");
 const tituloGraficoDistancia = document.getElementById("titulo-grafico-distancia");
 function atualizarTituloPredio() {
-  tituloPredio.textContent = `Prédio (${sim.andarMaximo + 1} pavimentos, ${sim.elevadores.length} elevadores, capacidade ${sim.capacidadePassageiros} pessoa(s)/elevador)`;
-  tituloGraficoDistancia.textContent = `distância (0–${sim.andarMaximo} pavimentos)`;
+  tituloPredio.textContent = `Prédio (${sim.andarMaximo} pavimentos, ${sim.elevadores.length} elevadores, capacidade ${sim.capacidadePassageiros} pessoa(s)/elevador)`;
+  tituloGraficoDistancia.textContent = `distância (0–${sim.controladorFuzzy.distanciaMaxima} pavimentos)`;
 }
 atualizarTituloPredio();
 
@@ -228,7 +228,7 @@ function reconfigurarPredio() {
     return;
   }
   if (andares < 2) {
-    status.textContent = "Mínimo 2 andares (térreo + 1).";
+    status.textContent = "Mínimo 2 andares.";
     status.style.color = "var(--vermelho)";
     return;
   }
@@ -247,15 +247,15 @@ function reconfigurarPredio() {
 
   // Preserva edições feitas em "lotacao"/"prioridade" (não dependem do
   // número de andares), mas reseta "distancia" ao padrão -- os pontos
-  // dela foram desenhados/editados numa escala (0 a andarMaximo ANTIGO)
+  // dela foram desenhados/editados numa escala (0 a distanciaMaxima ANTIGA)
   // que não faz mais sentido depois de mudar a quantidade de andares.
-  const distanciaPadraoAntiga = criarControladorFuzzy(null, sim.andarMaximo).parametros.distancia;
+  const distanciaPadraoAntiga = criarControladorFuzzy(null, sim.controladorFuzzy.distanciaMaxima).parametros.distancia;
   const distanciaFoiEditada = JSON.stringify(sim.controladorFuzzy.parametros.distancia) !== JSON.stringify(distanciaPadraoAntiga);
 
   const parametrosPreservados = clonarParametros(sim.controladorFuzzy.parametros);
   parametrosPreservados.distancia = clonarParametros(PARAMETROS_PADRAO).distancia;
 
-  const novoAndarMaximo = andares - 1;
+  const novoAndarMaximo = andares; // térreo = PAVIMENTO_TERREO (1), então o topo é o próprio total de andares
   reiniciarSimulacao(sim, {
     andarMaximo: novoAndarMaximo,
     capacidadePassageiros: capacidade,
@@ -265,7 +265,7 @@ function reconfigurarPredio() {
   painelPredio = construirPainelEdificio(containerBotoes, canvasPredio, sim.elevadores, aoClicarChamada, sim.andarMaximo);
   atualizarTituloPredio();
 
-  definirUniversoMaximo(graficos.distancia, sim.andarMaximo);
+  definirUniversoMaximo(graficos.distancia, sim.controladorFuzzy.distanciaMaxima);
   definirControladorNosGraficos(sim.controladorFuzzy);
   reconstruirCalculadoraTeste();
 
@@ -279,7 +279,7 @@ function reconfigurarPredio() {
   definirMarcadores(graficos.lotacao, []);
   definirMarcadores(graficos.prioridade, []);
 
-  status.textContent = `Aplicado: ${andares} andares (0 a ${novoAndarMaximo}), capacidade ${capacidade} pessoa(s)/elevador.`
+  status.textContent = `Aplicado: ${andares} andares (1 a ${novoAndarMaximo}), capacidade ${capacidade} pessoa(s)/elevador.`
     + (distanciaFoiEditada ? " A edição feita em distância foi descartada (a escala do gráfico mudou)." : "");
   status.style.color = "var(--texto-fraco)";
 
@@ -314,7 +314,7 @@ function abrirModalEmbarque(elevador, chamada, aoConfirmar) {
   modalTitulo.textContent = `Elevador ${elevador.id} chegou — quem vai embarcar? (pavimento ${chamada.pavimento} ${simboloDirecao(chamada.direcao)})`;
   const vagas = calcularVagasDisponiveis(elevador);
   const opcoes = [];
-  for (let codigo = 0; codigo <= sim.andarMaximo; codigo += 1) {
+  for (let codigo = PAVIMENTO_TERREO; codigo <= sim.andarMaximo; codigo += 1) {
     if (chamada.direcao === "SUBINDO" ? codigo > chamada.pavimento : codigo < chamada.pavimento) opcoes.push(codigo);
   }
 
@@ -325,7 +325,7 @@ function abrirModalEmbarque(elevador, chamada, aoConfirmar) {
   const botoesPorAndar = new Map();
   for (const codigo of opcoes) {
     const botao = document.createElement("button");
-    botao.textContent = codigo === 0 ? "Térreo" : `${codigo}º andar`;
+    botao.textContent = `${codigo}º andar`;
     botao.addEventListener("click", () => {
       if (marcados.has(codigo)) marcados.delete(codigo);
       else marcados.add(codigo);
@@ -381,13 +381,13 @@ function abrirModalEmbarque(elevador, chamada, aoConfirmar) {
 const CONDICOES_TESTE = ["Parado", "Subindo", "Descendo"];
 
 function nomeAndarTeste(codigo) {
-  return codigo === 0 ? "Térreo" : `${codigo}º andar`;
+  return `${codigo}º andar`;
 }
 
 function preencherSelectAndares(select, andarMaximo, valorPreferido) {
-  const anterior = valorPreferido ?? (Number(select.value) || 0);
+  const anterior = valorPreferido ?? (Number(select.value) || PAVIMENTO_TERREO);
   select.innerHTML = "";
-  for (let codigo = 0; codigo <= andarMaximo; codigo += 1) {
+  for (let codigo = PAVIMENTO_TERREO; codigo <= andarMaximo; codigo += 1) {
     const opt = document.createElement("option");
     opt.value = String(codigo);
     opt.textContent = nomeAndarTeste(codigo);
