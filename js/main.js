@@ -130,6 +130,8 @@ function atualizarPainelDecisao() {
     else if (a.descartado) {
       tr.className = "descartado";
       tr.title = `Descartado: ${a.motivoDescarte}`;
+    } else if (a.casoIdeal) {
+      tr.title = a.motivoIdeal;
     }
     tr.innerHTML = `<td style="color:${COR_ELEVADOR[a.elevadorId]};font-weight:bold">E${a.elevadorId}</td><td>${a.pavimentoAtual}</td><td>${simboloDirecao(a.direcao)}</td>` +
       `<td>${a.distancia.toFixed(0)}</td><td>${a.lotacao.toFixed(0)}%</td><td>${a.cargaKg.toFixed(0)} kg</td><td>${a.prioridade.toFixed(1)}</td>`;
@@ -140,7 +142,7 @@ function atualizarPainelDecisao() {
   if (escolhido) {
     regrasAtivadasEl.textContent = escolhido.termosAtivos.length
       ? `Termos ativados (elevador escolhido): ${escolhido.termosAtivos.join(", ")}`
-      : "Nenhum termo relevante ativado.";
+      : escolhido.motivoIdeal || "Nenhum termo relevante ativado.";
     definirMarcadores(graficos.distancia, [{ valor: escolhido.distancia, cor: "crimson" }]);
     definirMarcadores(graficos.lotacao, [{ valor: escolhido.lotacao, cor: "crimson" }]);
     definirMarcadores(graficos.prioridade, [{ valor: escolhido.prioridade, cor: "crimson" }]);
@@ -519,6 +521,7 @@ document.getElementById("btn-calcular-aptidao").addEventListener("click", () => 
     let situacao = "OK";
     if (r.foraDeServico) situacao = "Fora de serviço";
     else if (r.descartado) situacao = `Descartado: ${r.motivoDescarte}`;
+    else if (r.casoIdeal) situacao = r.motivoIdeal;
 
     const tr = document.createElement("tr");
     if (r.descartado || r.foraDeServico) tr.className = "descartado";

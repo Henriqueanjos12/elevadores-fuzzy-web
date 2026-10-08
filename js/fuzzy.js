@@ -155,9 +155,14 @@ export function motivoDescarte(elevador, pavimentoChamada, calcularVagasDisponiv
   return null;
 }
 
+export const MOTIVO_CASO_IDEAL = "Elevador vazio parado no andar de chamada";
+
+/** entrada/prioridade/foraDeServico/descartado/motivoDescarte/semRegraAtivada/
+ * termosAtivos/casoIdeal/motivoIdeal -- mesmas chaves de calcular_prioridade
+ * em fuzzy/controlador_fuzzy.py. */
 export function calcularPrioridade(controlador, elevador, pavimentoChamada, calcularLotacaoPercentual, calcularVagasDisponiveis) {
   if (elevador.estado === "FORA_DE_SERVICO") {
-    return { entrada: { distancia: 0, lotacao: 0 }, prioridade: 0, foraDeServico: true, descartado: false, motivoDescarte: null, semRegraAtivada: false, termosAtivos: [] };
+    return { entrada: { distancia: 0, lotacao: 0 }, prioridade: 0, foraDeServico: true, descartado: false, motivoDescarte: null, semRegraAtivada: false, termosAtivos: [], casoIdeal: false, motivoIdeal: null };
   }
 
   const distanciaMaxima = controlador.distanciaMaxima;
@@ -167,7 +172,20 @@ export function calcularPrioridade(controlador, elevador, pavimentoChamada, calc
 
   const motivo = motivoDescarte(elevador, pavimentoChamada, calcularVagasDisponiveis);
   if (motivo !== null) {
-    return { entrada, prioridade: 0, foraDeServico: false, descartado: true, motivoDescarte: motivo, semRegraAtivada: false, termosAtivos: [] };
+    return { entrada, prioridade: 0, foraDeServico: false, descartado: true, motivoDescarte: motivo, semRegraAtivada: false, termosAtivos: [], casoIdeal: false, motivoIdeal: null };
+  }
+
+  // Caso ideal: distância 0 e lotação 0% -- elevador já parado exatamente
+  // no andar da chamada e vazio. Nem chega a entrar na máquina fuzzy,
+  // mesmo espírito do filtro de descarte acima (só que no sentido
+  // oposto): a defuzzificação por centroide nunca fecha em 100 sozinha
+  // aqui (só a regra "proxima & baixa -> muito_alta" dispara, e o
+  // centroide de qualquer recorte do termo de saída correspondente fica
+  // abaixo de 100), então esse ponto é tratado à parte -- ver a mesma
+  // explicação, com a conta feita, no docstring de calcular_prioridade em
+  // fuzzy/controlador_fuzzy.py.
+  if (distancia === 0 && lotacao === 0) {
+    return { entrada, prioridade: 100, foraDeServico: false, descartado: false, motivoDescarte: null, semRegraAtivada: false, termosAtivos: [], casoIdeal: true, motivoIdeal: MOTIVO_CASO_IDEAL };
   }
 
   const resultado = calcularSistemaFuzzy(distancia, lotacao, controlador.parametros);
@@ -179,5 +197,7 @@ export function calcularPrioridade(controlador, elevador, pavimentoChamada, calc
     motivoDescarte: null,
     semRegraAtivada: resultado.semRegraAtivada,
     termosAtivos: resultado.termosAtivos,
+    casoIdeal: false,
+    motivoIdeal: null,
   };
 }
