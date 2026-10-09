@@ -138,7 +138,11 @@ button.editando { background: #b45309; border-color: #b45309; }
 .grafico-item canvas.editavel { cursor: crosshair; }
 .legenda-cores { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
 .legenda-item { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--texto-fraco); }
-.legenda-cor { width: 9px; height: 9px; border-radius: 2px; flex: none; }
+/* Virou um traço (não mais um quadrado): o traçado sólido/tracejado/
+   pontilhado é parte da identidade do termo em "distancia" (ver charts.js
+   `estiloDoTermo`), então a legenda precisa mostrar o MESMO traçado da
+   curva, não só a cor. */
+.legenda-cor { width: 18px; height: 0; border-bottom: 2px solid transparent; flex: none; }
 
 .cabecalho-eventos { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .cabecalho-eventos h2 { margin: 0; }

@@ -6,8 +6,57 @@ import { trapmf } from "./fuzzy.js";
 // Paleta categórica validada (CVD-safe) da skill de dataviz -- passos de
 // modo escuro dos slots 1-5 (azul, laranja, água-marinha, amarelo, magenta),
 // na mesma ordem em que foram validados (a ordem É o mecanismo de segurança
-// pra daltonismo, não é só estética -- não reordenar).
+// pra daltonismo, não é só estética -- não reordenar). Usada tal e qual só
+// em "lotacao" (3 termos, cabe sem repetir).
 const CORES_TERMO = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"];
+
+// "distancia" (7 termos) e "prioridade" (6 termos) têm mais termos do que a
+// paleta categórica suporta sem repetir cor (achado real: cor repetida nos
+// dois gráficos confundia -- "proximo_desce" e "distante_sobe" tinham a
+// MESMA cor, e em "prioridade" até "pior" e "ideal", os dois extremos,
+// acabavam iguais). A skill de dataviz é explícita: mais série do que a
+// paleta aguenta sem colidir não é "escolher mais cores" -- é trocar de
+// canal. Os dois casos aqui já são, por natureza, ORDENADOS (não apenas
+// "identidade"), então cada um usa a codificação certa pro seu formato:
+//
+// * "distancia" é DIVERGENTE (Seção "vetor posição"): 3 termos "desce" + 1
+//   "exato" + 3 termos "sobe", um sinal com dois lados. Usa o par
+//   diverge divergente da skill (azul <-> laranja, slot 1 e 2, os dois já
+//   validados CVD-safe entre si) pro LADO, e o traçado da linha (sólido /
+//   tracejado / pontilhado) pra DISTÂNCIA dentro de cada lado -- um canal
+//   secundário de verdade (não é só estética), exatamente o que a skill
+//   pede quando uma paleta categórica não aguenta o número de séries.
+//   "exato" fica num cinza neutro (o mesmo tom de tinta secundária do
+//   tema), o meio da divergência.
+// * "prioridade" é ORDINAL (pior -> ideal é uma ordem de qualidade, não
+//   uma lista de nomes que poderiam estar em qualquer ordem) -- a skill
+//   pede UMA cor só com passos de luminosidade (não várias cores
+//   categóricas), usando o ramp azul documentado da skill (passos
+//   100-700), filtrado aos degraus que ainda têm contraste >= 3:1 (ou,
+//   abaixo disso, com a legenda de texto como contrapartida obrigatória).
+const COR_DESCE = "#3987e5"; // slot 1 (azul)
+const COR_SOBE = "#d95926"; // slot 2 (laranja)
+const COR_EXATO = "#c3c2b7"; // tinta secundária do tema (neutro)
+const TRACADO_PROXIMO = [];
+const TRACADO_DISTANTE = [6, 3];
+const TRACADO_MUITO_DISTANTE = [2, 3];
+const RAMP_PRIORIDADE = ["#cde2fb", "#9ec5f4", "#6da7ec", "#2a78d6", "#1c5cab", "#104281"]; // passos 100/200/300/450/550/650
+
+function estiloDoTermo(nome, indice, total) {
+  if (nome === "distancia") {
+    const meio = (total - 1) / 2; // indice do termo "exato"
+    if (indice === meio) return { cor: COR_EXATO, tracado: TRACADO_PROXIMO };
+    const distanciaDoMeio = Math.abs(indice - meio);
+    const cor = indice < meio ? COR_DESCE : COR_SOBE;
+    const tracado = distanciaDoMeio <= 1 ? TRACADO_PROXIMO : distanciaDoMeio <= 2 ? TRACADO_DISTANTE : TRACADO_MUITO_DISTANTE;
+    return { cor, tracado };
+  }
+  if (nome === "prioridade") {
+    return { cor: RAMP_PRIORIDADE[indice % RAMP_PRIORIDADE.length], tracado: TRACADO_PROXIMO };
+  }
+  return { cor: CORES_TERMO[indice % CORES_TERMO.length], tracado: TRACADO_PROXIMO };
+}
+
 const LIMIAR_PIXELS = 12;
 const MARGEM = 0.08;
 
@@ -70,15 +119,28 @@ export function definirParametrosGrafico(grafico, pontosPorTermo) {
  * cima das curvas, mas colidiam entre si em gráficos estreitos/com muitos
  * termos (ex.: "prioridade", com 5). Uma legenda de verdade identifica cada
  * curva pela cor sem depender de caber texto dentro do gráfico. */
+function cssDoTracado(tracado) {
+  if (tracado === TRACADO_DISTANTE) return "dashed";
+  if (tracado === TRACADO_MUITO_DISTANTE) return "dotted";
+  return "solid";
+}
+
 function atualizarLegenda(grafico) {
   if (!grafico.legendaEl) return;
   grafico.legendaEl.innerHTML = "";
-  Object.keys(grafico.pontos).forEach((termo, indice) => {
+  const termos = Object.keys(grafico.pontos);
+  termos.forEach((termo, indice) => {
+    const { cor, tracado } = estiloDoTermo(grafico.nome, indice, termos.length);
     const item = document.createElement("span");
     item.className = "legenda-item";
     const marcador = document.createElement("span");
     marcador.className = "legenda-cor";
-    marcador.style.backgroundColor = CORES_TERMO[indice % CORES_TERMO.length];
+    // Traçado (sólido/tracejado/pontilhado) também aparece na legenda, não só
+    // na curva -- é um canal de identidade de verdade em "distancia" (7
+    // termos, mais do que a paleta categórica aguenta sem repetir cor),
+    // então precisa dar pra reconhecer o termo pela legenda sozinha.
+    marcador.style.borderBottom = `2px ${cssDoTracado(tracado)} ${cor}`;
+    marcador.style.backgroundColor = "transparent";
     item.appendChild(marcador);
     item.appendChild(document.createTextNode(termo.replace("_", " ")));
     grafico.legendaEl.appendChild(item);
@@ -206,12 +268,13 @@ function redesenhar(grafico) {
   const nomes = Object.keys(grafico.pontos);
   nomes.forEach((termo, indice) => {
     const pontos = grafico.pontos[termo];
-    const cor = CORES_TERMO[indice % CORES_TERMO.length];
+    const { cor, tracado } = estiloDoTermo(grafico.nome, indice, nomes.length);
     const ys = [0, 1, 1, 0];
 
     ctx.strokeStyle = cor;
     ctx.fillStyle = cor;
     ctx.lineWidth = 2;
+    ctx.setLineDash(tracado);
     ctx.beginPath();
     pontos.forEach((x, i) => {
       const px = xParaPixel(grafico, x);
@@ -220,6 +283,7 @@ function redesenhar(grafico) {
       else ctx.lineTo(px, py);
     });
     ctx.stroke();
+    ctx.setLineDash([]);
 
     pontos.forEach((x, i) => {
       const px = xParaPixel(grafico, x);
