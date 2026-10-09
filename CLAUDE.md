@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A JavaScript port (no build step, no dependencies) of the didactic elevator-dispatch fuzzy-logic simulator whose Python/CustomTkinter original lives in a sibling directory (`../Fuzzy`, separate repo — see that project's own CLAUDE.md). Same Mamdani controller (`distancia` × `lotacao` → `prioridade`), same 9 rules, same two-phase call flow. Deployed as a static site to GitHub Pages at https://henriqueanjos12.github.io/elevadores-fuzzy-web/. Scope is deliberately narrower than the Python original: no metrics panel, no event-driven test suite — see README.md for what's in/out.
+A JavaScript port (no build step, no dependencies) of the didactic elevator-dispatch fuzzy-logic simulator whose Python/CustomTkinter original lives in a sibling directory (`../Fuzzy`, separate repo — see that project's own CLAUDE.md). Same Mamdani controller (`distancia` × `lotacao` → `prioridade`), same 21 rules (7×3 grid — `distancia` is signed, a "position vector": positive = call floor above/"sobe", negative = below/"desce"), same two-phase call flow. Deployed as a static site to GitHub Pages at https://henriqueanjos12.github.io/elevadores-fuzzy-web/. Scope is deliberately narrower than the Python original: no metrics panel, no event-driven test suite — see README.md for what's in/out.
 
 Keep this in sync with `../Fuzzy` when changing shared logic (fuzzy controller shape, dispatch rules, two-phase call flow) unless a change is browser/DOM-specific — port fixes both ways when a bug or behavior change applies to both.
 
@@ -24,7 +24,7 @@ Mirrors the Python original's module boundaries directly, so someone who knows o
 
 | Web (`js/`) | Python equivalent | Role |
 |---|---|---|
-| `fuzzy.js` | `fuzzy/controlador_fuzzy.py` | trapezoidal membership (`trapmf`), 9 rules, Mamdani min/max + centroid over a discretized 0–100 (or 0–`distanciaMaxima`) universe, deterministic pre-fuzzy discard filter |
+| `fuzzy.js` | `fuzzy/controlador_fuzzy.py` | trapezoidal membership (`trapmf`), 21 rules, Mamdani min/max + centroid over a discretized 0–100 `prioridade` universe and a signed -`distanciaMaxima`..+`distanciaMaxima` `distancia` universe, deterministic pre-fuzzy discard filter, `casoIdeal` 100%-pin |
 | `models.js` | `models/*.py` | elevador/chamada/passageiro as plain objects + loose functions, floor-direction rules, state machine |
 | `gerador.js` | `simulation/gerador_chamadas.py` | manual call creation + validation (floor-direction rules). The Python original also does seeded-random call generation; this port had that too (mulberry32 PRNG) until the "chamada aleatória"/"geração automática" UI controls were removed as an intentional simplification — no RNG left here now |
 | `despachante.js` | `simulation/despachante.py` | picks an elevator (fuzzy or mais-próximo, same 4-level tie-break cascade) |
@@ -36,6 +36,21 @@ Mirrors the Python original's module boundaries directly, so someone who knows o
 ### Capacity is per-elevator, not a module constant
 
 Unlike the Python original (where `CAPACIDADE_MAX_PASSAGEIROS` is a fixed module constant, monkey-patched temporarily only inside the test-tab calculator), this port stores `capacidadeMaxPassageiros`/`capacidadeMaxKg` **on each elevator object** (`criarElevador(id, pavimento, capacidade)`), and floor count lives on `sim.andarMaximo` rather than a `PAVIMENTO_ULTIMO_ANDAR` constant. This is what lets "🏗 Configurar prédio" (in `main.js`) rebuild the *real* running building (not just a hypothetical test scenario) at runtime: it calls `reiniciarSimulacao(sim, {andarMaximo, capacidadePassageiros, parametros})` (no `seed` param — the RNG was removed along with the "chamada aleatória"/"geração automática" controls), which rebuilds the elevators and re-scales the fuzzy controller's `distancia` universe (`criarControladorFuzzy` already supported a configurable `distanciaMaxima` before this feature existed), then `main.js` rebuilds the building DOM/canvas, the distancia chart's x-axis, and the aptitude calculator's floor/capacity `<select>` options to match. When editing anything that assumes a fixed floor count or capacity, check whether it needs to read `sim.andarMaximo` / `sim.capacidadePassageiros` / `elevador.capacidadeMax*` instead of a constant.
+
+### `distancia` is signed — `abs()` it for "closeness"
+
+`distancia` (in `fuzzy.js`) is a position vector, not a magnitude: positive
+means the call floor is above the elevator ("sobe"), negative means below
+("desce"), independent of the elevator's actual movement
+(`elevador.estado`/`direcao`, used only by `motivoDescarte`). Any code
+comparing `distancia` for "which elevator is closer" — `despachante.js`'s
+`desempatar` and the `mais_proximo` algorithm — must use `Math.abs(...)`;
+a naive `<` comparison always prefers "desce" (negative) over "sobe"
+(positive) regardless of actual magnitude. `charts.js` also had to learn a
+`universoMin` per chart (0 for `lotacao`/`prioridade`, `-universoMax` for
+`distancia`) — anywhere charts.js used to assume a chart's universe starts
+at 0 (axis mapping, tick generation, vertex drag clamping) now reads
+`grafico.universoMin` instead.
 
 ### Vertex-drag tie-breaking (`charts.js`)
 

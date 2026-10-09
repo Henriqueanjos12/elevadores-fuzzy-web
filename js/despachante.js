@@ -26,10 +26,15 @@ export function avaliarElevador(controlador, elevador, pavimentoChamada) {
   };
 }
 
+// `distancia` agora é COM SINAL (Seção "vetor posição" do Pedro, em
+// fuzzy.js) -- o desempate/"mais próximo" usa `Math.abs(...)`, porque
+// "menor distância" quer dizer mais perto fisicamente, não o menor valor
+// assinado (que sempre preferiria "desce" sobre "sobe", independente da
+// magnitude real).
 function desempatar(candidatos, chavePrincipal) {
   return candidatos.reduce((melhor, atual) => {
-    const chaveA = [chavePrincipal(atual), atual.distancia, atual.lotacao, atual.cargaKg, atual.elevadorId];
-    const chaveB = [chavePrincipal(melhor), melhor.distancia, melhor.lotacao, melhor.cargaKg, melhor.elevadorId];
+    const chaveA = [chavePrincipal(atual), Math.abs(atual.distancia), atual.lotacao, atual.cargaKg, atual.elevadorId];
+    const chaveB = [chavePrincipal(melhor), Math.abs(melhor.distancia), melhor.lotacao, melhor.cargaKg, melhor.elevadorId];
     for (let i = 0; i < chaveA.length; i += 1) {
       if (chaveA[i] !== chaveB[i]) return chaveA[i] < chaveB[i] ? atual : melhor;
     }
@@ -46,7 +51,7 @@ export function escolherElevador(controlador, elevadores, pavimentoChamada, algo
 
   const escolhido =
     algoritmo === "mais_proximo"
-      ? desempatar(candidatos, (a) => a.distancia)
+      ? desempatar(candidatos, (a) => Math.abs(a.distancia))
       : desempatar(candidatos, (a) => -a.prioridade);
 
   for (const a of avaliacoes) a.escolhido = a.elevadorId === escolhido.elevadorId;

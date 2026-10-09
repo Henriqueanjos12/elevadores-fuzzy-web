@@ -11,6 +11,13 @@ const CORES_TERMO = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"];
 const LIMIAR_PIXELS = 12;
 const MARGEM = 0.08;
 
+// "distancia" tem sinal (Seção "vetor posição" em fuzzy.js): universo vai
+// de -universoMax a +universoMax. As outras duas (lotacao, prioridade)
+// continuam de 0 a universoMax, como sempre.
+function calcularUniversoMin(nome, universoMax) {
+  return nome === "distancia" ? -universoMax : 0;
+}
+
 export function construirGrafico(canvas, nome, universoMax, legendaEl = null) {
   const dpr = window.devicePixelRatio || 1;
   const cssLargura = canvas.clientWidth || 260;
@@ -25,6 +32,7 @@ export function construirGrafico(canvas, nome, universoMax, legendaEl = null) {
     ctx,
     nome,
     universoMax,
+    universoMin: calcularUniversoMin(nome, universoMax),
     largura: cssLargura,
     altura: cssAltura,
     pontos: {},
@@ -81,6 +89,7 @@ function atualizarLegenda(grafico) {
  * andares do prédio é reconfigurado -- ver "Configurar prédio" em main.js). */
 export function definirUniversoMaximo(grafico, novoMaximo) {
   grafico.universoMax = novoMaximo;
+  grafico.universoMin = calcularUniversoMin(grafico.nome, novoMaximo);
   redesenhar(grafico);
 }
 
@@ -97,14 +106,16 @@ export function definirMarcadores(grafico, marcadores) {
 // ---- coordenadas ---------------------------------------------------------
 
 function xParaPixel(grafico, x) {
-  const min = -grafico.universoMax * MARGEM;
-  const max = grafico.universoMax * (1 + MARGEM);
+  const amplitude = grafico.universoMax - grafico.universoMin;
+  const min = grafico.universoMin - amplitude * MARGEM;
+  const max = grafico.universoMax + amplitude * MARGEM;
   return ((x - min) / (max - min)) * grafico.largura;
 }
 
 function pixelParaX(grafico, px) {
-  const min = -grafico.universoMax * MARGEM;
-  const max = grafico.universoMax * (1 + MARGEM);
+  const amplitude = grafico.universoMax - grafico.universoMin;
+  const min = grafico.universoMin - amplitude * MARGEM;
+  const max = grafico.universoMax + amplitude * MARGEM;
   return min + (px / grafico.largura) * (max - min);
 }
 
@@ -115,21 +126,28 @@ function yParaPixel(grafico, y) {
   return grafico.altura - MARGEM_INFERIOR_Y - y * (grafico.altura - MARGEM_SUPERIOR_Y - MARGEM_INFERIOR_Y);
 }
 
-/** Valores "redondos" pro eixo x (0, passo, 2*passo, ..., até `max`),
- * adaptado ao tamanho do universo -- mesma lógica de qualquer biblioteca de
- * gráficos (escolhe o menor passo de {1,2,5,10}×10^n que não passe de ~5
- * marcações). */
-function gerarTicks(max, alvoTicks = 5) {
-  if (max <= 0) return [0];
-  const bruto = max / alvoTicks;
+/** Valores "redondos" pro eixo x (0, passo, 2*passo, ..., até `max` -- e,
+ * quando `min` é negativo, espelhado pro lado negativo também, sempre
+ * incluindo o 0), adaptado ao tamanho do universo -- mesma lógica de
+ * qualquer biblioteca de gráficos (escolhe o menor passo de {1,2,5,10}×10^n
+ * que não passe de ~5 marcações pro lado positivo). */
+function gerarTicks(max, min = 0, alvoTicks = 5) {
+  if (max <= 0 && min >= 0) return [0];
+  const bruto = Math.max(max, -min) / alvoTicks;
   const magnitude = Math.pow(10, Math.floor(Math.log10(bruto)));
   const normalizado = bruto / magnitude;
   const passo = (normalizado <= 1 ? 1 : normalizado <= 2 ? 2 : normalizado <= 5 ? 5 : 10) * magnitude;
 
-  const ticks = [];
-  for (let v = 0; v <= max + 1e-9; v += passo) ticks.push(Math.round(v * 100) / 100);
-  if (ticks[ticks.length - 1] < max - 1e-9) ticks.push(max);
-  return ticks;
+  const ticksPositivos = [];
+  for (let v = 0; v <= max + 1e-9; v += passo) ticksPositivos.push(Math.round(v * 100) / 100);
+  if (ticksPositivos[ticksPositivos.length - 1] < max - 1e-9) ticksPositivos.push(Math.round(max * 100) / 100);
+
+  if (min >= 0) return ticksPositivos;
+
+  const ticksNegativos = [];
+  for (let v = -passo; v >= min - 1e-9; v -= passo) ticksNegativos.push(Math.round(v * 100) / 100);
+  if (ticksNegativos[ticksNegativos.length - 1] > min + 1e-9) ticksNegativos.push(Math.round(min * 100) / 100);
+  return [...ticksNegativos.reverse(), ...ticksPositivos];
 }
 
 // ---- desenho ---------------------------------------------------------
@@ -176,7 +194,7 @@ function redesenhar(grafico) {
   ctx.strokeStyle = "#475569";
   ctx.fillStyle = "#7d8590";
   ctx.textAlign = "center";
-  for (const valor of gerarTicks(grafico.universoMax)) {
+  for (const valor of gerarTicks(grafico.universoMax, grafico.universoMin)) {
     const px = xParaPixel(grafico, valor);
     ctx.beginPath();
     ctx.moveTo(px, yBase);
@@ -235,7 +253,7 @@ function redesenhar(grafico) {
  * até os vizinhos imediatos, incluindo os limites do universo nas pontas). */
 function liberdadeDoVertice(grafico, termo, indice) {
   const pontos = grafico.pontos[termo];
-  const limiteInferior = indice > 0 ? pontos[indice - 1] : 0;
+  const limiteInferior = indice > 0 ? pontos[indice - 1] : grafico.universoMin;
   const limiteSuperior = indice < 3 ? pontos[indice + 1] : grafico.universoMax;
   return limiteSuperior - limiteInferior;
 }
@@ -276,9 +294,9 @@ function aoMover(grafico, ev) {
   const { termo, indice } = grafico.arraste;
   const pontos = grafico.pontos[termo];
   let valor = pixelParaX(grafico, ev.offsetX);
-  valor = Math.max(0, Math.min(grafico.universoMax, valor));
+  valor = Math.max(grafico.universoMin, Math.min(grafico.universoMax, valor));
   valor = Math.round(valor); // edição discreta -- encaixa no inteiro mais próximo, não contínuo
-  const limiteInferior = indice > 0 ? pontos[indice - 1] : 0;
+  const limiteInferior = indice > 0 ? pontos[indice - 1] : grafico.universoMin;
   const limiteSuperior = indice < 3 ? pontos[indice + 1] : grafico.universoMax;
   valor = Math.max(limiteInferior, Math.min(valor, limiteSuperior));
   pontos[indice] = valor;

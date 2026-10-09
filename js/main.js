@@ -65,7 +65,7 @@ const tituloPredio = document.getElementById("titulo-predio");
 const tituloGraficoDistancia = document.getElementById("titulo-grafico-distancia");
 function atualizarTituloPredio() {
   tituloPredio.textContent = `Prédio (${sim.andarMaximo} pavimentos, ${sim.elevadores.length} elevadores, capacidade ${sim.capacidadePassageiros} pessoa(s)/elevador)`;
-  tituloGraficoDistancia.textContent = `distância (0–${sim.controladorFuzzy.distanciaMaxima} pavimentos)`;
+  tituloGraficoDistancia.textContent = `distância (-${sim.controladorFuzzy.distanciaMaxima} a +${sim.controladorFuzzy.distanciaMaxima} pavimentos, com sinal)`;
 }
 atualizarTituloPredio();
 
