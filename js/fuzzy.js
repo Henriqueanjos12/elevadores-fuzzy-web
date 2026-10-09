@@ -58,20 +58,31 @@ export const PARAMETROS_PADRAO = {
 // Base de regras: cobertura completa da grade distancia (7) x lotacao (3).
 // Assimétrica por design (contrapeso): lotação alta favorece "desce",
 // lotação baixa favorece "subir"; em exatamente 50% o sentido não importa
-// (linha simétrica). A coluna "exato" varia por lotação (decisão do
-// usuário: "ideal" só pro elevador realmente vazio, não qualquer carga no
-// andar certo) -- mas nunca repete o rótulo dos vizinhos imediatos
-// (proximo_desce/proximo_sobe), senão recria a mesma armadilha de
-// centroide-travado (duas regras atingindo o MESMO termo simétrico).
+// (linha simétrica).
+//
+// A coluna "exato" é "ideal" tanto pra "baixa" quanto pra "alta" -- essas
+// duas NUNCA estão ativas ao mesmo tempo (uma só é > 0 abaixo de 50%, a
+// outra só acima), então podem compartilhar a mesma saída sem risco. Só
+// "media" (a carga de equilíbrio) cai pra "bom" (decisão do usuário:
+// "ideal" considerando a carga, sem forçar um gradiente baixa > media >
+// alta que, perto do exato, brigaria com "mais carga = mais apto
+// descendo"). Regressão real (Ednilson, reunião 09/10): uma versão
+// anterior tinha "media" E "alta" apontando pro MESMO termo em "exato" --
+// como são lotação-adjacentes, isso recriava a armadilha de
+// centroide-travado (a mesma do alargamento de `lotacao` acima, só que
+// pelo eixo da lotação): a prioridade CAÍA conforme a carga aumentava de
+// 50% pra 75% antes de subir de novo. A tabela inteira foi verificada
+// numa varredura fina da grade distancia x lotacao, nos dois eixos, sem
+// nenhuma inversão.
 const REGRAS = [
   // lotação baixa (<50%, favorece subir)
   ["muito_distante_desce", "baixa", "pior"],
   ["distante_desce", "baixa", "ruim"],
   ["proximo_desce", "baixa", "aceitavel"],
   ["exato", "baixa", "ideal"],
-  ["proximo_sobe", "baixa", "ok"],
-  ["distante_sobe", "baixa", "aceitavel"],
-  ["muito_distante_sobe", "baixa", "ruim"],
+  ["proximo_sobe", "baixa", "bom"],
+  ["distante_sobe", "baixa", "ok"],
+  ["muito_distante_sobe", "baixa", "aceitavel"],
   // lotação em 50% (equilíbrio com o contrapeso, sentido não importa)
   ["muito_distante_desce", "media", "ruim"],
   ["distante_desce", "media", "aceitavel"],
@@ -81,10 +92,10 @@ const REGRAS = [
   ["distante_sobe", "media", "aceitavel"],
   ["muito_distante_sobe", "media", "ruim"],
   // lotação alta (>50%, favorece descer)
-  ["muito_distante_desce", "alta", "ruim"],
-  ["distante_desce", "alta", "aceitavel"],
-  ["proximo_desce", "alta", "ok"],
-  ["exato", "alta", "bom"],
+  ["muito_distante_desce", "alta", "aceitavel"],
+  ["distante_desce", "alta", "ok"],
+  ["proximo_desce", "alta", "bom"],
+  ["exato", "alta", "ideal"],
   ["proximo_sobe", "alta", "aceitavel"],
   ["distante_sobe", "alta", "ruim"],
   ["muito_distante_sobe", "alta", "pior"],
